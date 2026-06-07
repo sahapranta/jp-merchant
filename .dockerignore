@@ -1,0 +1,9 @@
+target/
+.mvn/
+.git/
+.gitattributes
+.gitignore
+.vscode/
+*.md
+mvnw
+mvnw.cmd

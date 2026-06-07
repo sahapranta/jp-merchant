@@ -4,6 +4,8 @@
 - Build: `mvn clean install -DskipTests`
 - Run: `mvn spring-boot:run`
 - Run tests: `mvn test`
+- Docker build: `docker compose build`
+- Docker run: `docker compose up -d`
 - Access H2 Console: http://localhost:8080/h2-console (JDBC: jdbc:h2:mem:edubilldb)
 
 ## Project Structure
