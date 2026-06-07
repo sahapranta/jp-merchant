@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+                xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Create Bill — EduBill</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>    
+    <meta name="_csrf"        th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <link rel="stylesheet" href="/css/bill.create.css"/>
+</head>
+<body>
+
+<!-- ═══ TOPBAR ═══ -->
+<nav class="topbar">
+    <div class="brand">Edu<span>Bill</span></div>
+    <div class="sub-txt">Bill Management System</div>
+    <div class="ms-auto d-flex align-items-center gap-3">        
+        <span class="inst-pill">
+            <i class="bi bi-building"></i>
+            <span th:text="${institutionName}">Institution Name</span>
+        </span>
+        <span style="color:rgba(255,255,255,.7);font-size:.82rem">
+            <i class="bi bi-person-circle me-1"></i>            
+            <span sec:authentication="name" th:text="${userName}">Admin</span>
+        </span>
+    </div>
+</nav>
+
+<!-- ═══ STEPPER ═══ -->
+<div class="stepper-wrap">
+    <div class="stepper">
+        <div class="st-item active" id="stp1"><div class="st-bbl">1</div><div class="st-lbl">Bill Info</div></div>
+        <div class="st-line" id="sl1"></div>
+        <div class="st-item" id="stp2"><div class="st-bbl">2</div><div class="st-lbl">Classification</div></div>
+        <div class="st-line" id="sl2"></div>
+        <div class="st-item" id="stp3"><div class="st-bbl">3</div><div class="st-lbl">Fee Structure</div></div>
+        <div class="st-line" id="sl3"></div>
+        <div class="st-item" id="stp4"><div class="st-bbl">4</div><div class="st-lbl">Account Mapping</div></div>
+        <div class="st-line" id="sl4"></div>
+        <div class="st-item" id="stp5"><div class="st-bbl">5</div><div class="st-lbl">LPF / Fine</div></div>
+        <div class="st-line" id="sl5"></div>
+        <div class="st-item" id="stp6">
+            <div class="st-bbl"><i class="bi bi-eye" style="font-size:.75rem"></i></div>
+            <div class="st-lbl">Preview &amp; Publish</div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ PAGE BODY ═══ -->
+<div class="page-body">
+
+    <!-- SIMPLE / ADVANCED TOGGLE -->
+    <div class="mode-bar">
+        <i class="bi bi-sliders" style="color:var(--primary)"></i>
+        <span class="lbl">Mode:</span>
+        <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" id="advToggle" role="switch"/>
+            <label class="form-check-label" for="advToggle" id="modeLabel" style="font-size:.85rem">Simple Mode</label>
+        </div>
+        <span class="text-muted ms-2" style="font-size:.78rem">
+            Advanced mode unlocks per-fee account mapping and extra LPF options.
+        </span>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         STEP 1 — BILL INFO
+    ═══════════════════════════════════════ -->
+    <div id="step1">
+        <div class="bcard">
+            <div class="bcard-hdr" id="hdr_basic" onclick="toggleCard('body_basic','hdr_basic')">
+                <h6><i class="bi bi-file-earmark-text"></i> Bill Title &amp; Dates</h6>
+                <i class="bi bi-chevron-down ti"></i>
+            </div>
+            <div class="bcard-body" id="body_basic">
+                <div class="row g-3">
+
+                    <div class="col-12">
+                        <label class="form-label">Bill Title <span class="req">*</span></label>                        
+                        <input type="text" class="form-control" id="billTitle"                                
+                               placeholder="e.g. Class 9 Monthly Fee – Jan 2025  or  1st Year Form Fill-up"
+                               maxlength="200"/>
+                        <div class="errmsg" id="e_title">Bill title is required.</div>
+                        <div class="form-text">Students see this on their payment challan.</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Bill Type <span class="req">*</span></label>
+                        <select class="form-select" id="billType">
+                            <option value="">— Select Bill Type —</option>
+                            <option value="MONTHLY">Monthly Fee</option>
+                            <option value="ONE_TIME">One-time Payment</option>
+                            <option value="SEMESTER">Semester Fee</option>
+                            <option value="EXAM">Exam Fee</option>
+                            <option value="ADMISSION">Admission / Registration</option>
+                            <option value="FORM_FILLUP">Form Fill-up</option>
+                            <option value="CUSTOM">Custom / Other</option>
+                        </select>
+                        <div class="errmsg" id="e_type">Please select a bill type.</div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Start Date <span class="req">*</span></label>
+                        <input type="date" class="form-control" id="billStart"/>
+                        <div class="errmsg" id="e_start">Start date is required.</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">End Date <span class="req">*</span></label>
+                        <input type="date" class="form-control" id="billEnd"/>
+                        <div class="errmsg" id="e_end">End date must be on or after start date.</div>
+                    </div>
+
+                    <!-- Advanced only fields -->
+                    <div class="col-md-6 adv">
+                        <label class="form-label">Academic Year <span class="opt">optional</span></label>
+                        <input type="text" class="form-control" id="academicYear" placeholder="e.g. 2024–2025"/>
+                    </div>
+                    <div class="col-md-6 adv">
+                        <label class="form-label">Internal Bill Code <span class="opt">optional</span></label>
+                        <input type="text" class="form-control" id="billCode" placeholder="Auto-generated if blank"/>
+                        <div class="form-text">Format: BILL-YYYYMM-XXXX</div>
+                    </div>
+                    <div class="col-12 adv">
+                        <label class="form-label">Description / Note <span class="opt">optional</span></label>
+                        <textarea class="form-control" id="billDesc" rows="2"
+                            placeholder="Visible on the bill — optional instructions..."></textarea>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end">
+            <button type="button" class="btn btn-p" onclick="goStep(2)">
+                Next: Classification <i class="bi bi-arrow-right ms-1"></i>
+            </button>
+        </div>
+    </div><!-- /step1 -->
+
+
+    <!-- ═══════════════════════════════════════
+         STEP 2 — CLASSIFICATION
+    ═══════════════════════════════════════ -->
+    <div id="step2" style="display:none">
+        <div class="bcard">
+            <div class="bcard-hdr" id="hdr_cls" onclick="toggleCard('body_cls','hdr_cls')">
+                <h6><i class="bi bi-diagram-3"></i> Institution &amp; Classification</h6>
+                <i class="bi bi-chevron-down ti"></i>
+            </div>
+            <div class="bcard-body" id="body_cls">
+
+                <div class="row g-3 mb-1">
+                    <div class="col-md-5">
+                        <label class="form-label">This bill is for <span class="req">*</span></label>
+                        <select class="form-select" id="instSection" onchange="onSection(this.value)">
+                            <option value="">— Select Section —</option>
+                            <option value="SCHOOL">School Section</option>
+                            <option value="COLLEGE">College Section</option>
+                            <option value="UNIVERSITY">University Section</option>
+                        </select>
+                        <div class="errmsg" id="e_section">Please select a section.</div>
+                    </div>
+                </div>
+
+                <!-- SCHOOL -->
+                <div id="hier_school" style="display:none">
+                    <div class="sdiv">School Classification</div>
+                    <div class="hier-box">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Class <span class="req">*</span></label>
+                                <select class="form-select" id="schoolClass">
+                                    <option value="">— Select Class —</option>
+                                    <option value="1">Class 1</option><option value="2">Class 2</option>
+                                    <option value="3">Class 3</option><option value="4">Class 4</option>
+                                    <option value="5">Class 5</option><option value="6">Class 6</option>
+                                    <option value="7">Class 7</option><option value="8">Class 8</option>
+                                    <option value="9">Class 9</option><option value="10">Class 10</option>
+                                    <option value="ALL">All Classes</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Shift <span class="opt">optional</span></label>
+                                <select class="form-select" id="schoolShift">
+                                    <option value="">All Shifts</option>
+                                    <option value="MORNING">Morning</option>
+                                    <option value="DAY">Day</option>
+                                    <option value="EVENING">Evening</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Section <span class="opt">optional</span></label>
+                                <input type="text" class="form-control" id="schoolSection"
+                                       placeholder="e.g. A, B, C or All"/>
+                            </div>
+                            <div class="col-md-4 adv">
+                                <label class="form-label">Group <span class="opt">optional</span></label>
+                                <select class="form-select" id="schoolGroup">
+                                    <option value="">All Groups</option>
+                                    <option value="SCIENCE">Science</option>
+                                    <option value="COMMERCE">Commerce</option>
+                                    <option value="ARTS">Arts / Humanities</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 adv">
+                                <label class="form-label">Version <span class="opt">optional</span></label>
+                                <select class="form-select" id="schoolVersion">
+                                    <option value="">All</option>
+                                    <option value="BM">Bangla Medium</option>
+                                    <option value="EV">English Version</option>
+                                    <option value="EM">English Medium</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLLEGE -->
+                <div id="hier_college" style="display:none">
+                    <div class="sdiv">College Classification</div>
+                    <div class="hier-box">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Year / Class <span class="req">*</span></label>
+                                <select class="form-select" id="collegeYear">
+                                    <option value="">— Select —</option>
+                                    <option value="Y1">1st Year (Class 11)</option>
+                                    <option value="Y2">2nd Year (Class 12)</option>
+                                    <option value="ALL">All Years</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Group / Stream <span class="req">*</span></label>                                
+                                <select class="form-select" id="collegeGroup"
+                                        onchange="onCollegeGroup(this.value)">
+                                    <option value="">— Select Group —</option>
+                                    <option value="SCIENCE">Science</option>
+                                    <option value="COMMERCE">Commerce / Business</option>
+                                    <option value="ARTS">Arts / Humanities</option>
+                                    <option value="ALL">All Groups</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Section <span class="opt">optional</span></label>
+                                <input type="text" class="form-control" id="collegeSection"
+                                       placeholder="e.g. A, B or All"/>
+                            </div>
+                            <div class="col-md-4 adv">
+                                <label class="form-label">Shift <span class="opt">optional</span></label>
+                                <select class="form-select" id="collegeShift">
+                                    <option value="">All</option>
+                                    <option>Morning</option><option>Day</option><option>Evening</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 adv">
+                                <label class="form-label">Version <span class="opt">optional</span></label>
+                                <select class="form-select" id="collegeVersion">
+                                    <option value="">All</option>
+                                    <option value="BM">Bangla Medium</option>
+                                    <option value="EV">English Version</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="sciNotice"
+                             class="alert alert-info d-flex align-items-center gap-2 mt-3 mb-0 py-2"
+                             style="display:none !important; font-size:.8rem">
+                            <i class="bi bi-flask"></i>
+                            <span>Science group — <strong>Lab Fee</strong> will be added to the fee table.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- UNIVERSITY -->
+                <div id="hier_uni" style="display:none">
+                    <div class="sdiv">University Classification</div>
+                    <div class="hier-box">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Faculty <span class="req">*</span></label>
+                                <select class="form-select" id="uniFaculty" onchange="onFacultyChange(this.value)">
+                                    <option value="">— Select Faculty —</option>
+                                    <option value="SCI">Faculty of Science</option>
+                                    <option value="ARTS">Faculty of Arts</option>
+                                    <option value="COM">Faculty of Commerce &amp; Business</option>
+                                    <option value="ENG">Faculty of Engineering</option>
+                                    <option value="LAW">Faculty of Law</option>
+                                    <option value="MED">Faculty of Medicine</option>
+                                    <option value="SOC">Faculty of Social Science</option>
+                                    <option value="ALL">All Faculties</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Department <span class="req">*</span></label>                                
+                                <select class="form-select" id="uniDept">
+                                    <option value="">— Select Faculty first —</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Program <span class="req">*</span></label>
+                                <select class="form-select" id="uniProgram">
+                                    <option value="">— Select —</option>
+                                    <option value="BSC_H">B.Sc. (Honours)</option>
+                                    <option value="BA_H">B.A. (Honours)</option>
+                                    <option value="BCOM_H">B.Com. (Honours)</option>
+                                    <option value="MSC">M.Sc.</option>
+                                    <option value="MA">M.A.</option>
+                                    <option value="MCOM">M.Com.</option>
+                                    <option value="MST_R">Masters (Regular)</option>
+                                    <option value="MST_I">Masters (Irregular)</option>
+                                    <option value="EVE">Evening Program</option>
+                                    <option value="CERT">Certificate Course</option>
+                                    <option value="PHD">Ph.D.</option>
+                                    <option value="PDOC">Post-Doctoral</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Year / Semester <span class="req">*</span></label>
+                                <select class="form-select" id="uniYearSem">
+                                    <option value="">— Select —</option>
+                                    <option value="Y1S1">1st Year / 1st Semester</option>
+                                    <option value="Y1S2">1st Year / 2nd Semester</option>
+                                    <option value="Y2S1">2nd Year / 3rd Semester</option>
+                                    <option value="Y2S2">2nd Year / 4th Semester</option>
+                                    <option value="Y3S1">3rd Year / 5th Semester</option>
+                                    <option value="Y3S2">3rd Year / 6th Semester</option>
+                                    <option value="Y4S1">4th Year / 7th Semester</option>
+                                    <option value="Y4S2">4th Year / 8th Semester</option>
+                                    <option value="ALL">All Years</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 adv">
+                                <label class="form-label">Session <span class="opt">optional</span></label>
+                                <input type="text" class="form-control" id="uniSession"
+                                       placeholder="e.g. 2022–23"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-o" onclick="goStep(1)"><i class="bi bi-arrow-left me-1"></i> Back</button>
+            <button type="button" class="btn btn-p" onclick="goStep(3)">Next: Fee Structure <i class="bi bi-arrow-right ms-1"></i></button>
+        </div>
+    </div><!-- /step2 -->
+
+
+    <!-- ═══════════════════════════════════════
+         STEP 3 — FEE STRUCTURE
+    ═══════════════════════════════════════ -->
+    <div id="step3" style="display:none">
+
+        <!-- University: payment mode -->
+        <div id="uniPayCard" class="bcard" style="display:none">
+            <div class="bcard-hdr light" id="hdr_pm" onclick="toggleCard('body_pm','hdr_pm')">
+                <h6><i class="bi bi-wallet2"></i> University Payment Mode</h6>
+                <i class="bi bi-chevron-down ti"></i>
+            </div>
+            <div class="bcard-body" id="body_pm">
+                <div class="pm-cards">
+                    <div class="pm-card on" id="pm_ONE_TIME" onclick="selectPM('ONE_TIME')">
+                        <i class="bi bi-cash-coin"></i><span>One-time</span>
+                    </div>
+                    <div class="pm-card" id="pm_SEMESTER" onclick="selectPM('SEMESTER')">
+                        <i class="bi bi-layers"></i><span>Semester-wise</span>
+                    </div>
+                    <div class="pm-card" id="pm_MONTHLY" onclick="selectPM('MONTHLY')">
+                        <i class="bi bi-calendar-month"></i><span>Monthly</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Month selector — flexible: calendar pills + custom month/year input -->
+        <div id="monthCard" class="bcard">
+            <div class="bcard-hdr light" id="hdr_months" onclick="toggleCard('body_months','hdr_months')">
+                <h6><i class="bi bi-calendar-range"></i> Select Months</h6>
+                <span class="hbadge" id="monthCount">0 selected</span>
+                <i class="bi bi-chevron-down ti ms-2"></i>
+            </div>
+            <div class="bcard-body" id="body_months">
+                <div class="form-text mb-2">
+                    Select any months — not limited to one year.
+                    Use <strong>Custom Month</strong> for specific month+year combinations (e.g. Jul 2026).
+                </div>
+
+                <!-- Quick month pills (current year context) -->
+                <div class="mpills" id="monthPills">
+                    <span class="mpill" data-m="JAN" data-lbl="Jan">Jan</span>
+                    <span class="mpill" data-m="FEB" data-lbl="Feb">Feb</span>
+                    <span class="mpill" data-m="MAR" data-lbl="Mar">Mar</span>
+                    <span class="mpill" data-m="APR" data-lbl="Apr">Apr</span>
+                    <span class="mpill" data-m="MAY" data-lbl="May">May</span>
+                    <span class="mpill" data-m="JUN" data-lbl="Jun">Jun</span>
+                    <span class="mpill" data-m="JUL" data-lbl="Jul">Jul</span>
+                    <span class="mpill" data-m="AUG" data-lbl="Aug">Aug</span>
+                    <span class="mpill" data-m="SEP" data-lbl="Sep">Sep</span>
+                    <span class="mpill" data-m="OCT" data-lbl="Oct">Oct</span>
+                    <span class="mpill" data-m="NOV" data-lbl="Nov">Nov</span>
+                    <span class="mpill" data-m="DEC" data-lbl="Dec">Dec</span>
+                </div>
+                <div class="mt-2 d-flex gap-2 flex-wrap align-items-center">
+                    <!-- Year context for pills -->
+                    <div class="input-group" style="width:130px">
+                        <span class="input-group-text" style="font-size:.78rem">Year</span>
+                        <input type="number" class="form-control form-control-sm" id="pillYear"
+                               style="font-size:.78rem" min="2000" max="2099"/>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selAllMonths()">Select All</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clrMonths()">Clear</button>
+                </div>
+
+                <!-- Custom month/year entry (for non-standard ranges) -->
+                <div class="custom-month-row mt-2">
+                    <span style="font-size:.78rem;font-weight:500;white-space:nowrap">
+                        <i class="bi bi-plus-circle me-1"></i>Custom Month:
+                    </span>
+                    <select class="form-select form-select-sm" id="cstMonth" style="width:110px;flex:0 0 110px;font-size:.8rem">
+                        <option value="JAN">January</option><option value="FEB">February</option>
+                        <option value="MAR">March</option><option value="APR">April</option>
+                        <option value="MAY">May</option><option value="JUN">June</option>
+                        <option value="JUL">July</option><option value="AUG">August</option>
+                        <option value="SEP">September</option><option value="OCT">October</option>
+                        <option value="NOV">November</option><option value="DEC">December</option>
+                    </select>
+                    <input type="number" class="form-control form-control-sm" id="cstYear"
+                           style="width:90px;flex:0 0 90px;font-size:.8rem" min="2000" max="2099"
+                           placeholder="Year"/>
+                    <button type="button" class="btn btn-sm btn-p" onclick="addCustomMonth()">
+                        <i class="bi bi-plus-lg me-1"></i>Add
+                    </button>
+                </div>
+
+                <!-- Selected months list -->
+                <div id="selMonthList" class="d-flex flex-wrap gap-2 mt-3"></div>
+                <div class="errmsg mt-1" id="e_months">Please add at least one month.</div>
+            </div>
+        </div>
+
+        <!-- Fee table -->
+        <div class="bcard">
+            <div class="bcard-hdr accent" id="hdr_fee" onclick="toggleCard('body_fee','hdr_fee')">
+                <h6><i class="bi bi-table"></i> Fee Structure Table</h6>
+                <span class="hbadge" id="feeCount">0 items</span>
+                <i class="bi bi-chevron-down ti ms-2"></i>
+            </div>
+            <div class="bcard-body" id="body_fee">
+                <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                    <div class="form-text">
+                        <i class="bi bi-lightbulb me-1 text-warning"></i>
+                        Type an amount, click <strong>Fill →</strong> to copy across all months.
+                        Each cell is individually editable.
+                    </div>
+                    <button type="button" class="btn btn-sm btn-p" onclick="addRow()">
+                        <i class="bi bi-plus-lg me-1"></i>Add Fee Item
+                    </button>
+                </div>
+
+                <div id="noMonthMsg" class="alert alert-warning py-2 mb-0" style="font-size:.82rem">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Add at least one month above to build the fee table.
+                </div>
+
+                <div class="ftbl-wrap" id="ftblWrap" style="display:none">
+                    <table class="ftbl" id="ftbl">
+                        <thead>
+                            <tr id="ftblHead">
+                                <th>Fee Item</th>
+                                <!-- month columns injected by JS -->
+                                <th style="min-width:90px">Row Total</th>
+                                <th style="width:36px"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="ftblBody"></tbody>
+                        <tfoot>
+                            <tr id="grandRow">
+                                <td>Grand Total (৳)</td>
+                                <!-- col totals injected by JS -->
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Semester blocks (university — semester mode) -->
+        <div id="semCard" class="bcard" style="display:none">
+            <div class="bcard-hdr" id="hdr_sem" onclick="toggleCard('body_sem','hdr_sem')">
+                <h6><i class="bi bi-layers"></i> Semester-wise Fee Setup</h6>
+                <i class="bi bi-chevron-down ti"></i>
+            </div>
+            <div class="bcard-body" id="body_sem">
+                <div id="semBlocks"></div>
+                <button type="button" class="btn btn-sm btn-p mt-1" onclick="addSem()">
+                    <i class="bi bi-plus-lg me-1"></i>Add Semester
+                </button>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-o" onclick="goStep(2)"><i class="bi bi-arrow-left me-1"></i> Back</button>
+            <button type="button" class="btn btn-p" onclick="goStep(4)">Next: Account Mapping <i class="bi bi-arrow-right ms-1"></i></button>
+        </div>
+    </div><!-- /step3 -->
+
+
+    <!-- ═══════════════════════════════════════
+         STEP 4 — ACCOUNT MAPPING (MANDATORY)
+    ═══════════════════════════════════════ -->
+    <div id="step4" style="display:none">
+        <div class="bcard">
+            <div class="bcard-hdr" id="hdr_acct" onclick="toggleCard('body_acct','hdr_acct')">
+                <h6><i class="bi bi-bank"></i> Bank Account Mapping <span style="font-size:.75rem;opacity:.8;margin-left:.3rem">(Mandatory)</span></h6>
+                <i class="bi bi-chevron-down ti"></i>
+            </div>
+            <div class="bcard-body" id="body_acct">
+
+                <!-- Simple mode: one account for everything -->
+                <div id="simpleAcct">
+                    <label class="form-label">Collect all fees via <span class="req">*</span></label>                    
+                    <select class="form-select" id="singleAcct" style="max-width:360px"
+                            onchange="clearErr('e_acct')">
+                        <option value="">— Select Bank Account —</option>                        
+                        <option>
+                            Bank Account
+                        </option>
+                    </select>
+                    <div class="errmsg" id="e_acct">Please select a bank account.</div>
+                    <div class="form-text mt-1">Switch to Advanced mode to assign per-fee accounts.</div>
+                </div>
+
+                <!-- Advanced mode: per-fee account mapping -->
+                <div id="advAcct" style="display:none">
+                    <div class="form-text mb-3">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Assign each fee item to a bank account. All fees must be mapped.
+                    </div>
+                    <div id="acctMapRows">
+                        <p class="text-muted" style="font-size:.82rem">
+                            Complete Step 3 (fee structure) first.
+                        </p>
+                    </div>
+                    <div id="acctSummary" style="display:none;margin-top:.75rem">
+                        <div class="sdiv">Collection Summary by Account</div>
+                        <div id="acctSummaryRows"></div>
+                        <div class="alert alert-success py-2 mt-2 mb-0" style="font-size:.82rem">
+                            <i class="bi bi-check-circle me-1"></i>
+                            Total mapped: <strong id="mappedTotal">৳0</strong>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-o" onclick="goStep(3)"><i class="bi bi-arrow-left me-1"></i> Back</button>
+            <button type="button" class="btn btn-p" onclick="goStep(5)">Next: LPF / Fine <i class="bi bi-arrow-right ms-1"></i></button>
+        </div>
+    </div><!-- /step4 -->
+
+
+    <!-- ═══════════════════════════════════════
+         STEP 5 — LPF
+    ═══════════════════════════════════════ -->
+    <div id="step5" style="display:none">
+        <div class="bcard">
+            <div class="bcard-hdr" id="hdr_lpf" onclick="toggleCard('body_lpf','hdr_lpf')">
+                <h6>
+                    <i class="bi bi-exclamation-octagon"></i>
+                    Late Payment Fine / Charge (LPF)
+                    <span class="hbadge" id="lpfBadge">Disabled</span>
+                </h6>
+                <i class="bi bi-chevron-down ti"></i>
+            </div>
+            <div class="bcard-body" id="body_lpf">
+
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="lpfToggle"
+                           onchange="toggleLpf(this.checked)"/>
+                    <label class="form-check-label" for="lpfToggle" style="font-weight:500">
+                        Enable Late Payment Fine
+                    </label>
+                </div>
+
+                <div id="lpfBox" style="display:none">
+                    <div class="lpf-box">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">LPF Start Date <span class="req">*</span></label>
+                                <input type="date" class="form-control" id="lpfStart"/>
+                                <div class="form-text">Fine charged from this date onward.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">LPF End Date <span class="opt">optional</span></label>
+                                <input type="date" class="form-control" id="lpfEnd"/>
+                                <div class="form-text">Leave blank = no end date.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Fine Type <span class="req">*</span></label>
+                                <select class="form-select" id="lpfType"
+                                        onchange="onLpfType(this.value)">
+                                    <option value="">— Select —</option>
+                                    <option value="FIXED">Fixed Amount (৳)</option>
+                                    <option value="PERCENT">Percentage of Bill (%)</option>
+                                    <option value="DAILY_FIXED">Daily Fixed (৳ / day)</option>
+                                    <option value="DAILY_PCT">Daily Percentage (% / day)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Fine Amount <span class="req">*</span></label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="lpfAmount" min="0" step="0.01" placeholder="0"/>
+                                    <span class="input-group-text" id="lpfUnit">৳</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Fine Scope <span class="req">*</span></label>
+                                <select class="form-select" id="lpfScope"
+                                        onchange="onLpfScope(this.value)">
+                                    <option value="ENTIRE">Entire Bill Total</option>
+                                    <option value="PER_FEE">Per Fee Item (choosable)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 adv">
+                                <label class="form-label">Max Fine Cap <span class="opt">optional</span></label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="lpfCap" min="0" placeholder="No cap"/>
+                                    <span class="input-group-text">৳</span>
+                                </div>
+                            </div>
+
+                            <div class="col-12" id="perFeeSection" style="display:none">
+                                <label class="form-label">Apply fine to: <span class="req">*</span></label>
+                                <div id="perFeeList" class="d-flex flex-wrap gap-3"></div>
+                            </div>
+
+                            <div class="col-md-4 adv">
+                                <label class="form-label">Grace Period (days) <span class="opt">optional</span></label>
+                                <input type="number" class="form-control" id="lpfGrace" min="0" placeholder="0"/>
+                                <div class="form-text">Fine waived if paid within this window.</div>
+                            </div>
+                            <div class="col-md-4 adv">
+                                <label class="form-label">Recurrence</label>
+                                <select class="form-select" id="lpfRecur">
+                                    <option value="ONCE">One-time</option>
+                                    <option value="DAILY">Daily (accumulates)</option>
+                                    <option value="MONTHLY">Monthly</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 adv">
+                                <label class="form-label">Waiver Authority <span class="opt">optional</span></label>
+                                <select class="form-select" id="lpfWaiver">
+                                    <option value="">None</option>
+                                    <option value="ADMIN">Admin only</option>
+                                    <option value="PRINCIPAL">Principal</option>
+                                    <option value="BOTH">Admin or Principal</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-o" onclick="goStep(4)"><i class="bi bi-arrow-left me-1"></i> Back</button>
+            <button type="button" class="btn btn-p" onclick="goStep(6)">Preview &amp; Publish <i class="bi bi-eye ms-1"></i></button>
+        </div>
+    </div><!-- /step5 -->
+
+
+    <!-- ═══════════════════════════════════════
+         STEP 6 — PREVIEW & PUBLISH
+    ═══════════════════════════════════════ -->
+    <div id="step6" style="display:none">
+        <div class="bcard">
+            <div class="bcard-hdr accent">
+                <h6><i class="bi bi-eye"></i> Bill Preview</h6>
+                <span class="hbadge">Review carefully before publishing</span>
+            </div>
+            <div class="bcard-body" id="pvBody">
+                <!-- Built by buildPreview() -->
+            </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <button type="button" class="btn btn-o" onclick="goStep(5)">
+                <i class="bi bi-pencil me-1"></i> Back to Edit
+            </button>
+            <div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-secondary" onclick="saveDraft()">
+                    <i class="bi bi-floppy me-1"></i> Save as Draft
+                </button>
+                <button type="button" class="btn btn-a" id="publishBtn" onclick="publishBill()">
+                    <i class="bi bi-send-check me-1"></i> Publish Bill
+                </button>
+            </div>
+        </div>
+    </div><!-- /step6 -->
+
+</div><!-- /page-body -->
+
+<!-- STICKY FOOTER -->
+<div class="sfoot">
+    <div class="sfoot-info">
+        Step <strong id="footStep">1</strong> of 6 &mdash; <span id="footName">Bill Info</span>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="saveDraft()">
+        <i class="bi bi-floppy me-1"></i> Save Draft
+    </button>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/bill.create.js"></script>
+</body>
+</html>
