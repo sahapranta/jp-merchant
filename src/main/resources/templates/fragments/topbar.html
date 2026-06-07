@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<nav th:fragment="topbar" class="topbar">
+    <div class="brand">Edu<span>Bill</span></div>
+    <div class="sub-txt">Bill Management System</div>
+    <div class="ms-auto d-flex align-items-center gap-3">
+        <span class="inst-pill">
+            <i class="bi bi-building"></i>
+            <span th:text="${institutionName}">Institution Name</span>
+        </span>
+        <span style="color:rgba(255,255,255,.7);font-size:.82rem">
+            <i class="bi bi-person-circle me-1"></i>
+            <span sec:authentication="name" th:text="${userName}">Admin</span>
+        </span>
+    </div>
+</nav>
+</html>
