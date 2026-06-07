@@ -92,6 +92,11 @@ public class BillServiceImpl implements BillService {
         bill.setBillDescription(req.getBillDescription());
         bill.setClassificationJson(buildClassificationJson(req));
         bill.setUniPayMode(req.getUniPayMode());
+        bill.setAllowPartialPayment(Boolean.TRUE.equals(req.getAllowPartialPayment()));
+        bill.setAllowMonthSelection(req.getAllowMonthSelection() != null ? req.getAllowMonthSelection() : Boolean.TRUE);
+        bill.setStudentIdType(req.getStudentIdType() != null ? req.getStudentIdType() : "STUDENT_ID");
+        bill.setIsOpenAdmission(Boolean.TRUE.equals(req.getOpenAdmission()));
+        bill.setRequireFormFill(Boolean.TRUE.equals(req.getRequireFormFill()));
         bill.setUpdatedAt(LocalDateTime.now());
 
         // Replace months, fees, lpf
@@ -253,7 +258,7 @@ public class BillServiceImpl implements BillService {
             BillFeeAmount a = new BillFeeAmount();
             a.setBillFee(fee);
             a.setBillMonthId(null); // resolved after months persist in full save flow
-            // Store month label in a helper field or resolve via month table
+            a.setMonthLabel(entry.getKey()); // store month label for round-trip fidelity
             a.setAmount(entry.getValue() != null ? entry.getValue() : BigDecimal.ZERO);
             list.add(a);
         }
@@ -278,6 +283,63 @@ public class BillServiceImpl implements BillService {
 
     // ── Response Mapper ──────────────────────────────────────
     private BillResponse toResponse(Bill bill) {
+        // Parse classificationJson to extract institutionSection
+        String institutionSection = null;
+        if (bill.getClassificationJson() != null && !bill.getClassificationJson().isBlank()) {
+            try {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> clsMap = objectMapper.readValue(bill.getClassificationJson(), Map.class);
+                institutionSection = (String) clsMap.get("section");
+            } catch (Exception e) {
+                log.warn("Failed to parse classificationJson for bill {}: {}", bill.getId(), e.getMessage());
+            }
+        }
+
+        List<BillResponse.MonthDto> monthDtos = bill.getMonths().stream()
+            .map(m -> BillResponse.MonthDto.builder()
+                .id(m.getId()).label(m.getMonthLabel())
+                .year(m.getMonthYear()).seq(m.getMonthSeq())
+                .build())
+            .collect(Collectors.toList());
+
+        List<BillResponse.FeeDto> feeDtos = bill.getFees().stream()
+            .map(f -> {
+                Map<String, BigDecimal> amounts = f.getAmounts().stream()
+                    .collect(Collectors.toMap(
+                        a -> a.getMonthLabel() != null ? a.getMonthLabel() : "ONCE",
+                        BillFeeAmount::getAmount, (a, b) -> a));
+                BigDecimal rowTotal = amounts.values().stream()
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                return BillResponse.FeeDto.builder()
+                    .id(f.getId()).feeCode(f.getFeeCode())
+                    .feeName(f.getFeeName()).accountHead(f.getAccountHead())
+                    .bankAccountId(f.getBankAccountId())
+                    .amounts(amounts).rowTotal(rowTotal)
+                    .build();
+            })
+            .collect(Collectors.toList());
+
+        BillResponse.LpfDto lpfDto = null;
+        if (bill.getLpf() != null) {
+            BillLpf lpf = bill.getLpf();
+            lpfDto = BillResponse.LpfDto.builder()
+                .isEnabled(lpf.getIsEnabled())
+                .startDate(lpf.getLpfStartDate())
+                .endDate(lpf.getLpfEndDate())
+                .fineType(lpf.getFineType())
+                .fineAmount(lpf.getFineAmount())
+                .fineScope(lpf.getFineScope())
+                .maxCap(lpf.getMaxCap())
+                .graceDays(lpf.getGraceDays())
+                .recurrence(lpf.getRecurrence())
+                .waiverRole(lpf.getWaiverRole())
+                .build();
+        }
+
+        BigDecimal grandTotal = feeDtos.stream()
+            .map(f -> f.getRowTotal() != null ? f.getRowTotal() : BigDecimal.ZERO)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         return BillResponse.builder()
             .id(bill.getId())
             .billCode(bill.getBillCode())
@@ -294,8 +356,13 @@ public class BillServiceImpl implements BillService {
             .isOpenAdmission(bill.getIsOpenAdmission())
             .requireFormFill(bill.getRequireFormFill())
             .studentIdType(bill.getStudentIdType())
+            .institutionSection(institutionSection)
             .classificationJson(bill.getClassificationJson())
             .uniPayMode(bill.getUniPayMode())
+            .months(monthDtos)
+            .fees(feeDtos)
+            .lpf(lpfDto)
+            .grandTotal(grandTotal)
             .createdAt(bill.getCreatedAt())
             .publishedAt(bill.getPublishedAt())
             .build();

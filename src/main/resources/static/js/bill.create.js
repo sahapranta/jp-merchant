@@ -231,7 +231,7 @@ function applyUniPM(mode) {
         if ($('#semBlocks').children().length === 0) addSem();
     } else { // ONE_TIME
         $('#monthCard').hide(); $('#semCard').hide();
-        S.months = [{ label:'ONCE', display:'(One-time)', year:null, seq:1 }];
+        if (S.months.length === 0) S.months = [{ label:'ONCE', display:'(One-time)', year:null, seq:1 }];
         if (S.feeRows.length === 0) {
             S.feeRows = DEF_FEES.UNIVERSITY.map(n => newRow(n));
         }
@@ -250,9 +250,15 @@ $(function() {
     const y = new Date().getFullYear();
     $('#pillYear').val(y);
     $('#cstYear').val(y);
-    $('#billStart').val(new Date().toISOString().split('T')[0]);
     // Simple/adv sync
     $('#simpleAcct').show(); $('#advAcct').hide();
+
+    if (typeof EXISTING_BILL !== 'undefined' && EXISTING_BILL && EXISTING_BILL.id) {
+        initEditMode(EXISTING_BILL);
+        // Don't default start date for edit; keep existing
+    } else {
+        $('#billStart').val(new Date().toISOString().split('T')[0]);
+    }
 });
 
 $(document).on('click', '.mpill', function () {
@@ -887,3 +893,111 @@ function fmt(n)      { return (parseFloat(n)||0).toLocaleString('en-IN',{minimum
 function esc(s)      { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function gv(sel)     { return $(sel).val(); }
 function selTxt(sel) { return $(sel+' option:selected').text().trim(); }
+
+/* ─────────────────────────────────────────────────────
+   INIT — populate form from existing bill for edit mode
+───────────────────────────────────────────────────── */
+function initEditMode(bill) {
+    S.draftId = bill.id;
+
+    $('#billTitle').val(bill.billTitle || '');
+    $('#billType').val(bill.billType || '');
+    $('#billStart').val(bill.billStartDate || '');
+    $('#billEnd').val(bill.billEndDate || '');
+    $('#academicYear').val(bill.academicYear || '');
+    $('#billCode').val(bill.billCode || '');
+    $('#billDesc').val(bill.billDescription || '');
+
+    // Classification
+    var cls = {};
+    try { cls = JSON.parse(bill.classificationJson || '{}'); } catch (e) {}
+    var section = bill.institutionSection || cls.section || '';
+    if (section) {
+        $('#instSection').val(section);
+        onSection(section);
+        switch (section) {
+            case 'SCHOOL':
+                $('#schoolClass').val(cls.schoolClass || '');
+                $('#schoolShift').val(cls.shift || '');
+                $('#schoolSection').val(cls.classSection || '');
+                $('#schoolGroup').val(cls.group || '');
+                $('#schoolVersion').val(cls.version || '');
+                break;
+            case 'COLLEGE':
+                $('#collegeYear').val(cls.collegeYear || '');
+                $('#collegeGroup').val(cls.collegeGroup || '');
+                onCollegeGroup(cls.collegeGroup || '');
+                $('#collegeSection').val(cls.collegeSection || '');
+                $('#collegeShift').val(cls.shift || '');
+                $('#collegeVersion').val(cls.version || '');
+                break;
+            case 'UNIVERSITY':
+                $('#uniFaculty').val(cls.faculty || '');
+                onFacultyChange(cls.faculty || '');
+                $('#uniDept').val(cls.department || '');
+                $('#uniProgram').val(cls.program || '');
+                $('#uniYearSem').val(cls.yearSemester || '');
+                $('#uniSession').val(cls.session || '');
+                break;
+        }
+    }
+
+    // University payment mode
+    if (section === 'UNIVERSITY' && bill.uniPayMode) {
+        S.uniPM = bill.uniPayMode;
+    }
+
+    // Restore months (onSection resets S.months, so populate after)
+    S.months = (bill.months || []).map(function(m, i) {
+        var label = m.label || '';
+        var year = m.year;
+        var display = label === 'ONCE' ? '(One-time)' :
+            ((MONTH_NAMES[label.split('_')[0]] || label.split('_')[0]).slice(0, 3) + ' ' + (year || ''));
+        return { label: label, year: year, display: display, seq: i + 1 };
+    });
+
+    // Restore fee rows
+    S.feeRows = (bill.fees || []).map(function(f) {
+        return {
+            id: genId(),
+            catId: f.id || null,
+            feeCode: f.feeCode || '',
+            name: f.feeName || '',
+            accountHead: f.accountHead || '',
+            accountId: f.bankAccountId || null,
+            amounts: f.amounts || {}
+        };
+    });
+
+    // Render months + fee table
+    renderSelMonths();
+    rebuildTable();
+
+    // Account mapping: use first fee's account for simple mode
+    if (S.feeRows.length > 0 && S.feeRows[0].accountId) {
+        $('#singleAcct').val(S.feeRows[0].accountId);
+    }
+
+    // LPF
+    if (bill.lpf) {
+        var l = bill.lpf;
+        if (l.enabled || l.isEnabled) {
+            $('#lpfToggle').prop('checked', true);
+            toggleLpf(true);
+        }
+        if (l.startDate)   $('#lpfStart').val(l.startDate);
+        if (l.endDate)     $('#lpfEnd').val(l.endDate);
+        if (l.fineType)    $('#lpfType').val(l.fineType);
+        if (l.fineAmount)  $('#lpfAmount').val(l.fineAmount);
+        if (l.fineScope)   $('#lpfScope').val(l.fineScope);
+        if (l.maxCap)      $('#lpfCap').val(l.maxCap);
+        if (l.graceDays)   $('#lpfGrace').val(l.graceDays);
+        if (l.recurrence)  $('#lpfRecur').val(l.recurrence);
+        if (l.waiverRole)  $('#lpfWaiver').val(l.waiverRole);
+        onLpfType($('#lpfType').val());
+        onLpfScope($('#lpfScope').val());
+    }
+}
+
+var _idCounter = 0;
+function genId() { return 'r' + (++_idCounter); }

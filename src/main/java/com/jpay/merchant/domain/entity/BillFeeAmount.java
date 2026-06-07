@@ -19,6 +19,9 @@ public class BillFeeAmount {
     @Column(name = "bill_month_id")
     private Long billMonthId;   // null for ONE_TIME
 
+    @Column(name = "month_label", length = 30)
+    private String monthLabel;  // key from amounts map (e.g. "JAN_2026")
+
     @Column(name = "amount", nullable = false)
     @Builder.Default
     private java.math.BigDecimal amount = java.math.BigDecimal.ZERO;

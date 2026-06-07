@@ -170,6 +170,7 @@ CREATE TABLE IF NOT EXISTS bill_fee_amount (
     bill_fee_id     BIGINT          NOT NULL REFERENCES bill_fee(id) ON DELETE CASCADE,
     bill_month_id   BIGINT          REFERENCES bill_month(id) ON DELETE CASCADE,
                     -- NULL for ONE_TIME bills
+    month_label     VARCHAR(30),    -- key from amounts map (e.g. JAN_2026)
     amount          DECIMAL(12,2)   NOT NULL DEFAULT 0,
     is_waivable     BOOLEAN         NOT NULL DEFAULT FALSE,
     UNIQUE (bill_fee_id, bill_month_id)

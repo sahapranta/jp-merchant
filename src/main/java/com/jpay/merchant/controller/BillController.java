@@ -2,6 +2,7 @@ package com.jpay.merchant.controller;
 
 import com.jpay.merchant.domain.entity.BankAccount;
 import com.jpay.merchant.domain.entity.FeeItemCatalogue;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpay.merchant.dto.request.BillRequest;
 import com.jpay.merchant.dto.response.BillResponse;
 import com.jpay.merchant.repository.BankAccountRepository;
@@ -29,6 +30,7 @@ public class BillController {
     private final BillService billService;
     private final BankAccountRepository bankAccountRepo;
     private final FeeItemCatalogueRepository catalogueRepo;
+    private final ObjectMapper objectMapper;
 
     @Value("${app.biller.default-id:1}")
     private Long defaultBillerId;
@@ -67,9 +69,13 @@ public class BillController {
     @GetMapping("/{id}/edit")
     public String showEditForm(@PathVariable Long id, Model model) {
         BillResponse bill = billService.getById(id);
-        // Map BillResponse back to BillRequest for form pre-fill
-        model.addAttribute("billRequest", new BillRequest()); // TODO: mapper
+        model.addAttribute("billRequest", new BillRequest());
         model.addAttribute("existingBill", bill);
+        try {
+            model.addAttribute("existingBillJson", objectMapper.writeValueAsString(bill));
+        } catch (Exception e) {
+            log.warn("Failed to serialize existing bill", e);
+        }
         populateFormModel(model);
         return "bill/create";
     }
