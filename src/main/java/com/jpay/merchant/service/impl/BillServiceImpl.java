@@ -8,6 +8,7 @@ import com.jpay.merchant.repository.BillRepository;
 import com.jpay.merchant.service.BillService;
 import com.jpay.merchant.util.BillCodeGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class BillServiceImpl implements BillService {
     private final BankAccountRepository bankAccountRepository;
     private final BillCodeGenerator codeGenerator;
     private final ObjectMapper objectMapper;
+    private final EntityManager entityManager;
 
     // ── Create Draft ────────────────────────────────────────
     @Override
@@ -101,9 +103,10 @@ public class BillServiceImpl implements BillService {
 
         // Replace months, fees, lpf
         bill.getMonths().clear();
-        bill.getMonths().addAll(buildMonths(req, bill));
-
         bill.getFees().clear();
+        entityManager.flush(); // force DELETE before INSERT to avoid UK violations
+
+        bill.getMonths().addAll(buildMonths(req, bill));
         bill.getFees().addAll(buildFees(req, bill, billerId));
 
         if (Boolean.TRUE.equals(req.getLpfEnabled())) {
