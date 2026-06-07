@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: head('Bill Detail — EduBill', null)}"></head>
+<body>
+    <th:block th:replace="~{fragments/topbar :: topbar}"></th:block>
+
+    <div class="page-body">
+        <!-- Back + Actions -->
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <a href="/bills" class="btn btn-sm" style="border:1px solid #dde3ed;border-radius:8px;font-size:.82rem;color:#1a1a2e">
+                <i class="bi bi-arrow-left me-1"></i> Back to Bills
+            </a>
+            <div class="d-flex gap-2">
+                <a th:href="@{/bills/{id}/edit(id=${bill.id})}" class="btn btn-sm" style="background:#1a1a2e;color:#fff;border-radius:8px;font-weight:500">
+                    <i class="bi bi-pencil me-1"></i> Edit
+                </a>
+            </div>
+        </div>
+
+        <!-- Bill header card -->
+        <div class="card border-0 shadow-sm mb-4" style="border-radius:14px">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+                    <div>
+                        <div class="d-flex align-items-center gap-3 mb-1">
+                            <span style="font-family:monospace;font-size:.85rem;color:#6C2F9B;font-weight:600" th:text="${bill.billCode}">BILL-001</span>
+                            <span th:if="${bill.status == 'DRAFT'}" style="display:inline-block;font-size:.7rem;font-weight:600;padding:.2rem .55rem;border-radius:20px;background:#f0eef6;color:#6C2F9B">Draft</span>
+                            <span th:if="${bill.status == 'PUBLISHED'}" style="display:inline-block;font-size:.7rem;font-weight:600;padding:.2rem .55rem;border-radius:20px;background:#e6f7ee;color:#198754">Published</span>
+                            <span th:if="${bill.status == 'ARCHIVED'}" style="display:inline-block;font-size:.7rem;font-weight:600;padding:.2rem .55rem;border-radius:20px;background:#f4f5f9;color:#6b7a99">Archived</span>
+                        </div>
+                        <h4 style="font-family:'DM Serif Display',serif;color:#1a1a2e;margin:0" th:text="${bill.billTitle}">Bill Title</h4>
+                    </div>
+                    <span style="font-size:.8rem;color:#6b7a99;white-space:nowrap">
+                        <i class="bi bi-clock me-1"></i>
+                        Created <span th:text="${#temporals.format(bill.createdAt, 'dd MMM yyyy, h:mm a')}">01 Jan 2025</span>
+                    </span>
+                </div>
+
+                <hr style="opacity:.15;margin:1rem 0"/>
+
+                <div class="row g-4">
+                    <div class="col-md-3 col-6">
+                        <div style="font-size:.72rem;color:#6b7a99;text-transform:uppercase;letter-spacing:.04em;font-weight:600">Bill Type</div>
+                        <div style="font-weight:500;color:#1a1a2e;margin-top:.2rem" th:text="${bill.billType}">MONTHLY</div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div style="font-size:.72rem;color:#6b7a99;text-transform:uppercase;letter-spacing:.04em;font-weight:600">Period</div>
+                        <div style="font-weight:500;color:#1a1a2e;margin-top:.2rem" th:text="|${bill.billStartDate} — ${bill.billEndDate}|">01 Jan – 31 Dec</div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div style="font-size:.72rem;color:#6b7a99;text-transform:uppercase;letter-spacing:.04em;font-weight:600">Academic Year</div>
+                        <div style="font-weight:500;color:#1a1a2e;margin-top:.2rem" th:text="${bill.academicYear} ?: '—'">2025</div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div style="font-size:.72rem;color:#6b7a99;text-transform:uppercase;letter-spacing:.04em;font-weight:600">Version</div>
+                        <div style="font-weight:500;color:#1a1a2e;margin-top:.2rem" th:text="${bill.version}">1</div>
+                    </div>
+                    <div class="col-12" th:if="${bill.billDescription}">
+                        <div style="font-size:.72rem;color:#6b7a99;text-transform:uppercase;letter-spacing:.04em;font-weight:600">Description</div>
+                        <div style="color:#1a1a2e;margin-top:.2rem;font-size:.9rem;white-space:pre-wrap" th:text="${bill.billDescription}">Description text</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Classification card -->
+        <div class="card border-0 shadow-sm mb-4" style="border-radius:14px" th:if="${bill.classificationJson}">
+            <div class="card-body p-4">
+                <h6 style="font-family:'DM Serif Display',serif;color:#1a1a2e;margin:0 0 1rem;display:flex;align-items:center;gap:.5rem">
+                    <i class="bi bi-diagram-3" style="color:#6C2F9B"></i> Classification
+                </h6>
+                <pre style="font-family:'DM Sans',sans-serif;font-size:.85rem;color:#1a1a2e;margin:0;white-space:pre-wrap" th:text="${bill.classificationJson}">JSON</pre>
+            </div>
+        </div>
+
+        <!-- Config card -->
+        <div class="card border-0 shadow-sm mb-4" style="border-radius:14px">
+            <div class="card-body p-4">
+                <h6 style="font-family:'DM Serif Display',serif;color:#1a1a2e;margin:0 0 1rem;display:flex;align-items:center;gap:.5rem">
+                    <i class="bi bi-gear" style="color:#6C2F9B"></i> Configuration
+                </h6>
+                <div class="row g-3">
+                    <div class="col-md-3 col-6">
+                        <div style="font-size:.72rem;color:#6b7a99;text-transform:uppercase;letter-spacing:.04em;font-weight:600">Partial Payment</div>
+                        <div style="margin-top:.2rem">
+                            <span th:if="${bill.allowPartialPayment}" style="color:#198754;font-weight:500">Allowed</span>
+                            <span th:unless="${bill.allowPartialPayment}" style="color:#6b7a99">Not allowed</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div style="font-size:.72rem;color:#6b7a99;text-transform:uppercase;letter-spacing:.04em;font-weight:600">Month Selection</div>
+                        <div style="margin-top:.2rem">
+                            <span th:if="${bill.allowMonthSelection}" style="color:#198754;font-weight:500">Enabled</span>
+                            <span th:unless="${bill.allowMonthSelection}" style="color:#6b7a99">Disabled</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div style="font-size:.72rem;color:#6b7a99;text-transform:uppercase;letter-spacing:.04em;font-weight:600">Open Admission</div>
+                        <div style="margin-top:.2rem">
+                            <span th:if="${bill.isOpenAdmission}" style="color:#198754;font-weight:500">Yes</span>
+                            <span th:unless="${bill.isOpenAdmission}" style="color:#6b7a99">No</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div style="font-size:.72rem;color:#6b7a99;text-transform:uppercase;letter-spacing:.04em;font-weight:600">Student ID Type</div>
+                        <div style="font-weight:500;color:#1a1a2e;margin-top:.2rem" th:text="${bill.studentIdType} ?: '—'">STUDENT_ID</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- University payment mode -->
+        <div class="card border-0 shadow-sm mb-4" style="border-radius:14px" th:if="${bill.uniPayMode}">
+            <div class="card-body p-4">
+                <h6 style="font-family:'DM Serif Display',serif;color:#1a1a2e;margin:0;display:flex;align-items:center;gap:.5rem">
+                    <i class="bi bi-wallet2" style="color:#6C2F9B"></i> Payment Mode
+                </h6>
+                <span style="font-weight:500;color:#1a1a2e" th:text="${bill.uniPayMode}">ONE_TIME</span>
+            </div>
+        </div>
+
+        <!-- Published info -->
+        <div class="card border-0 shadow-sm mb-4" style="border-radius:14px" th:if="${bill.publishedAt}">
+            <div class="card-body p-4">
+                <h6 style="font-family:'DM Serif Display',serif;color:#1a1a2e;margin:0;display:flex;align-items:center;gap:.5rem">
+                    <i class="bi bi-send-check" style="color:#198754"></i> Published
+                </h6>
+                <span style="color:#6b7a99;font-size:.88rem" th:text="${#temporals.format(bill.publishedAt, 'dd MMM yyyy, h:mm a')}">01 Jan 2025</span>
+            </div>
+        </div>
+
+    </div>
+
+    <th:block th:replace="~{fragments/scripts :: scripts(null)}"></th:block>
+</body>
+</html>

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<th:block th:fragment="layout(title, content, css, js)">
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:fragment="layout(title, content, css, js)">
 <head th:replace="~{fragments/head :: head(${title}, ${css})}"></head>
 <body>
     <th:block th:replace="~{fragments/topbar :: topbar}"></th:block>

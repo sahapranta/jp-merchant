@@ -1,5 +1,6 @@
 package com.jpay.merchant.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -84,7 +85,7 @@ public class BillRequest {
     private List<Long> feeAccountIds = new ArrayList<>();
 
     // ── Step 5: LPF ────────────────────────────────────────
-    private boolean lpfEnabled;
+    private Boolean lpfEnabled;
     private LocalDate lpfStartDate;
     private LocalDate lpfEndDate;
     private String lpfType;         // FIXED | PERCENT | DAILY_FIXED | DAILY_PCT
@@ -100,12 +101,13 @@ public class BillRequest {
     private List<Integer> lpfFeeIndices = new ArrayList<>();
 
     // ── Bill config ─────────────────────────────────────────
-    private boolean advancedMode;
-    private boolean allowPartialPayment;
-    private boolean allowMonthSelection;
+    private Boolean advancedMode;
+    private Boolean allowPartialPayment;
+    private Boolean allowMonthSelection;
     private String  studentIdType;
-    private boolean isOpenAdmission;
-    private boolean requireFormFill;
+    @JsonProperty("openAdmission")
+    private Boolean openAdmission;
+    private Boolean requireFormFill;
 
     // ── Nested DTOs ─────────────────────────────────────────
 

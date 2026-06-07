@@ -21,6 +21,12 @@ public class BillResponse {
     private String        institutionSection;
     private String        classificationJson;
     private String        uniPayMode;
+    private String        billDescription;
+    private Boolean       allowPartialPayment;
+    private Boolean       allowMonthSelection;
+    private Boolean       isOpenAdmission;
+    private Boolean       requireFormFill;
+    private String        studentIdType;
     private LocalDateTime createdAt;
     private LocalDateTime publishedAt;
     private List<MonthDto>  months;

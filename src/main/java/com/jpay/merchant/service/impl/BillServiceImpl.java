@@ -3,6 +3,7 @@ package com.jpay.merchant.service.impl;
 import com.jpay.merchant.domain.entity.*;
 import com.jpay.merchant.dto.request.BillRequest;
 import com.jpay.merchant.dto.response.BillResponse;
+import com.jpay.merchant.repository.BankAccountRepository;
 import com.jpay.merchant.repository.BillRepository;
 import com.jpay.merchant.service.BillService;
 import com.jpay.merchant.util.BillCodeGenerator;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 public class BillServiceImpl implements BillService {
 
     private final BillRepository billRepository;
+    private final BankAccountRepository bankAccountRepository;
     private final BillCodeGenerator codeGenerator;
     private final ObjectMapper objectMapper;
 
@@ -48,21 +50,21 @@ public class BillServiceImpl implements BillService {
             .institutionSectionId(null)        // resolve from session if needed
             .classificationJson(buildClassificationJson(req))
             .uniPayMode(req.getUniPayMode())
-            .allowPartialPayment(req.isAllowPartialPayment())
-            .allowMonthSelection(req.isAllowMonthSelection())
+            .allowPartialPayment(Boolean.TRUE.equals(req.getAllowPartialPayment()))
+            .allowMonthSelection(req.getAllowMonthSelection() != null ? req.getAllowMonthSelection() : Boolean.TRUE)
             .studentIdType(req.getStudentIdType() != null ? req.getStudentIdType() : "STUDENT_ID")
-            .isOpenAdmission(req.isOpenAdmission())
-            .requireFormFill(req.isRequireFormFill())
+            .isOpenAdmission(Boolean.TRUE.equals(req.getOpenAdmission()))
+            .requireFormFill(Boolean.TRUE.equals(req.getRequireFormFill()))
             .build();
 
         // Months
         bill.setMonths(buildMonths(req, bill));
 
         // Fees (with account mapping)
-        bill.setFees(buildFees(req, bill));
+        bill.setFees(buildFees(req, bill, billerId));
 
         // LPF
-        if (req.isLpfEnabled()) {
+        if (Boolean.TRUE.equals(req.getLpfEnabled())) {
             bill.setLpf(buildLpf(req, bill));
         }
 
@@ -97,9 +99,9 @@ public class BillServiceImpl implements BillService {
         bill.getMonths().addAll(buildMonths(req, bill));
 
         bill.getFees().clear();
-        bill.getFees().addAll(buildFees(req, bill));
+        bill.getFees().addAll(buildFees(req, bill, billerId));
 
-        if (req.isLpfEnabled()) {
+        if (Boolean.TRUE.equals(req.getLpfEnabled())) {
             bill.setLpf(buildLpf(req, bill));
         } else {
             bill.setLpf(null);
@@ -202,13 +204,13 @@ public class BillServiceImpl implements BillService {
         return m;
     }
 
-    private List<BillFee> buildFees(BillRequest req, Bill bill) {
+    private List<BillFee> buildFees(BillRequest req, Bill bill, Long billerId) {
         if (req.getFeeRows() == null) return new ArrayList<>();
         List<BillFee> list = new ArrayList<>();
         int idx = 0;
         for (BillRequest.FeeRowRequest fr : req.getFeeRows()) {
             // Account mapping: advanced mode = per-fee list, simple = single account
-            Long accountId = resolveAccount(req, idx);
+            Long accountId = resolveAccount(req, idx, billerId);
 
             BillFee fee = new BillFee();
             fee.setBill(bill);
@@ -227,13 +229,21 @@ public class BillServiceImpl implements BillService {
         return list;
     }
 
-    private Long resolveAccount(BillRequest req, int idx) {
-        if (req.isAdvancedMode()
+    private Long resolveAccount(BillRequest req, int idx, Long billerId) {
+        Long accountId = null;
+        if (Boolean.TRUE.equals(req.getAdvancedMode())
                 && req.getFeeAccountIds() != null
                 && idx < req.getFeeAccountIds().size()) {
-            return req.getFeeAccountIds().get(idx);
+            accountId = req.getFeeAccountIds().get(idx);
+        } else {
+            accountId = req.getSingleAccountId();
         }
-        return req.getSingleAccountId();
+        if (accountId == null) {
+            accountId = bankAccountRepository
+                .findByBillerIdAndIsActiveTrueOrderBySortOrderAsc(billerId)
+                .stream().findFirst().map(BankAccount::getId).orElse(null);
+        }
+        return accountId;
     }
 
     private List<BillFeeAmount> buildAmounts(BillRequest.FeeRowRequest fr, BillFee fee) {
@@ -278,6 +288,12 @@ public class BillServiceImpl implements BillService {
             .billStartDate(bill.getBillStartDate())
             .billEndDate(bill.getBillEndDate())
             .academicYear(bill.getAcademicYear())
+            .billDescription(bill.getBillDescription())
+            .allowPartialPayment(bill.getAllowPartialPayment())
+            .allowMonthSelection(bill.getAllowMonthSelection())
+            .isOpenAdmission(bill.getIsOpenAdmission())
+            .requireFormFill(bill.getRequireFormFill())
+            .studentIdType(bill.getStudentIdType())
             .classificationJson(bill.getClassificationJson())
             .uniPayMode(bill.getUniPayMode())
             .createdAt(bill.getCreatedAt())

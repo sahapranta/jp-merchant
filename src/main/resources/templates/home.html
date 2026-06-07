@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html th:replace="~{layout :: layout(
-    title='Dashboard — EduBill',
-    content=~{::main})}"
-    xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: head('Dashboard — EduBill', null)}"></head>
 <body>
-<main>
+    <th:block th:replace="~{fragments/topbar :: topbar}"></th:block>
+
     <div class="page-body">
         <h1 class="page-title">Dashboard</h1>
 
@@ -40,6 +40,7 @@
             </div>
         </div>
     </div>
-</main>
+
+    <th:block th:replace="~{fragments/scripts :: scripts(null)}"></th:block>
 </body>
 </html>

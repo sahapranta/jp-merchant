@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: head('All Bills — EduBill', null)}"></head>
+<body>
+    <th:block th:replace="~{fragments/topbar :: topbar}"></th:block>
+
+    <div class="page-body">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h1 class="page-title mb-0">All Bills</h1>
+            <a href="/bills/create" class="btn" style="background:#1a1a2e;color:#fff;border-radius:8px;font-weight:500">
+                <i class="bi bi-plus-circle me-1"></i> Create Bill
+            </a>
+        </div>
+
+        <!-- Status filter tabs -->
+        <div class="d-flex gap-2 mb-4 flex-wrap">
+            <a th:href="@{/bills}"
+               th:classappend="${currentStatus == null} ? 'btn btn-sm' : 'btn btn-sm btn-outline-secondary'"
+               class="btn btn-sm"
+               style="border-radius:20px;font-weight:500;background:${currentStatus == null} ? '#1a1a2e' : '';color:${currentStatus == null} ? '#fff' : ''">
+                All
+            </a>
+            <a th:href="@{/bills?status=DRAFT}"
+               th:classappend="${currentStatus == 'DRAFT'} ? 'btn btn-sm' : 'btn btn-sm btn-outline-secondary'"
+               class="btn btn-sm"
+               style="border-radius:20px;font-weight:500;background:${currentStatus == 'DRAFT'} ? '#1a1a2e' : '';color:${currentStatus == 'DRAFT'} ? '#fff' : ''">
+                Drafts
+            </a>
+            <a th:href="@{/bills?status=PUBLISHED}"
+               th:classappend="${currentStatus == 'PUBLISHED'} ? 'btn btn-sm' : 'btn btn-sm btn-outline-secondary'"
+               class="btn btn-sm"
+               style="border-radius:20px;font-weight:500;background:${currentStatus == 'PUBLISHED'} ? '#1a1a2e' : '';color:${currentStatus == 'PUBLISHED'} ? '#fff' : ''">
+                Published
+            </a>
+            <a th:href="@{/bills?status=ARCHIVED}"
+               th:classappend="${currentStatus == 'ARCHIVED'} ? 'btn btn-sm' : 'btn btn-sm btn-outline-secondary'"
+               class="btn btn-sm"
+               style="border-radius:20px;font-weight:500;background:${currentStatus == 'ARCHIVED'} ? '#1a1a2e' : '';color:${currentStatus == 'ARCHIVED'} ? '#fff' : ''">
+                Archived
+            </a>
+        </div>
+
+        <!-- Bills table -->
+        <div th:if="${#lists.isEmpty(bills)}" class="text-center py-5">
+            <div class="mb-3" style="font-size:3rem;color:#d0d5e0">
+                <i class="bi bi-receipt"></i>
+            </div>
+            <p class="text-muted fs-5">No bills found</p>
+            <a href="/bills/create" class="btn btn-sm" style="background:#1a1a2e;color:#fff;border-radius:8px">
+                <i class="bi bi-plus-circle me-1"></i> Create your first bill
+            </a>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(bills)}" class="table-responsive">
+            <table class="table align-middle" style="font-size:.88rem;border-collapse:separate;border-spacing:0 6px">
+                <thead>
+                    <tr style="color:#6b7a99;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em">
+                        <th>Code</th>
+                        <th>Title</th>
+                        <th>Type</th>
+                        <th>Period</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="bill : ${bills}"
+                        style="background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.06);vertical-align:middle">
+                        <td style="border:none;padding:.8rem .6rem;border-radius:10px 0 0 10px">
+                            <span style="font-family:monospace;font-size:.8rem;color:#6C2F9B" th:text="${bill.billCode}">BILL-001</span>
+                        </td>
+                        <td style="border:none;padding:.8rem .6rem">
+                            <span style="font-weight:500;color:#1a1a2e" th:text="${bill.billTitle}">Bill Title</span>
+                        </td>
+                        <td style="border:none;padding:.8rem .6rem">
+                            <span style="font-size:.78rem;color:#6b7a99" th:text="${bill.billType}">MONTHLY</span>
+                        </td>
+                        <td style="border:none;padding:.8rem .6rem;white-space:nowrap">
+                            <span style="font-size:.78rem;color:#6b7a99" th:text="|${bill.billStartDate} – ${bill.billEndDate}|">2025-01-01 – 2025-12-31</span>
+                        </td>
+                        <td style="border:none;padding:.8rem .6rem">
+                            <span th:if="${bill.status == 'DRAFT'}"
+                                  style="display:inline-block;font-size:.72rem;font-weight:600;padding:.2rem .55rem;border-radius:20px;background:#f0eef6;color:#6C2F9B">Draft</span>
+                            <span th:if="${bill.status == 'PUBLISHED'}"
+                                  style="display:inline-block;font-size:.72rem;font-weight:600;padding:.2rem .55rem;border-radius:20px;background:#e6f7ee;color:#198754">Published</span>
+                            <span th:if="${bill.status == 'ARCHIVED'}"
+                                  style="display:inline-block;font-size:.72rem;font-weight:600;padding:.2rem .55rem;border-radius:20px;background:#f4f5f9;color:#6b7a99">Archived</span>
+                            <span th:if="${bill.status == 'INACTIVE'}"
+                                  style="display:inline-block;font-size:.72rem;font-weight:600;padding:.2rem .55rem;border-radius:20px;background:#fef0f0;color:#dc3545">Inactive</span>
+                        </td>
+                        <td style="border:none;padding:.8rem .6rem;white-space:nowrap">
+                            <span style="font-size:.78rem;color:#6b7a99" th:text="${#temporals.format(bill.createdAt, 'dd MMM yyyy')}">01 Jan 2025</span>
+                        </td>
+                        <td style="border:none;padding:.8rem .6rem;border-radius:0 10px 10px 0" class="text-end">
+                            <div class="d-flex gap-1 justify-content-end">
+                                <a th:href="@{/bills/{id}(id=${bill.id})}" class="btn btn-sm" style="border:1px solid #dde3ed;border-radius:6px;font-size:.78rem;color:#1a1a2e">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a th:href="@{/bills/{id}/edit(id=${bill.id})}" class="btn btn-sm" style="border:1px solid #dde3ed;border-radius:6px;font-size:.78rem;color:#1a1a2e">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <th:block th:replace="~{fragments/scripts :: scripts(null)}"></th:block>
+</body>
+</html>

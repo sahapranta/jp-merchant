@@ -40,6 +40,8 @@ public class BillController {
         Long billerId = getSessionBillerId();
         model.addAttribute("bills", billService.listByBiller(billerId, status));
         model.addAttribute("currentStatus", status);
+        model.addAttribute("institutionName", "Dhaka Model College");
+        model.addAttribute("userName", "Admin");
         return "bill/list";
     }
 
@@ -49,6 +51,16 @@ public class BillController {
         model.addAttribute("billRequest", new BillRequest());
         populateFormModel(model);
         return "bill/create";
+    }
+
+    // ── GET /bills/{id}  (detail / preview) ──────────────────
+    @GetMapping("/{id}")
+    public String showBill(@PathVariable Long id, Model model) {
+        BillResponse bill = billService.getById(id);
+        model.addAttribute("bill", bill);
+        model.addAttribute("institutionName", "Dhaka Model College");
+        model.addAttribute("userName", "Admin");
+        return "bill/detail";
     }
 
     // ── GET /bills/{id}/edit ─────────────────────────────────
