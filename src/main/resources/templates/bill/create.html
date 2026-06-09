@@ -204,51 +204,77 @@
                 <div id="hier_college" style="display:none">
                     <div class="sdiv">College Classification</div>
                     <div class="hier-box">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Year / Class <span class="req">*</span></label>
-                                <select class="form-select" id="collegeYear">
-                                    <option value="">— Select —</option>
-                                    <option value="Y1">1st Year (Class 11)</option>
-                                    <option value="Y2">2nd Year (Class 12)</option>
-                                    <option value="ALL">All Years</option>
-                                </select>
+
+                        <div class="d-flex align-items-center gap-3 mb-3 p-2 rounded" style="background:#eef4fb;border:1px solid #c5d8f5">
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" id="collegeMultiToggle"
+                                       onchange="onCollegeMultiToggle(this.checked)"/>
+                                <label class="form-check-label" for="collegeMultiToggle" style="font-weight:500;font-size:.85rem">
+                                    Multi-group Bill
+                                </label>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Group / Stream <span class="req">*</span></label>
-                                <select class="form-select" id="collegeGroup" onchange="onCollegeGroup(this.value)">
-                                    <option value="">— Select Group —</option>
-                                    <option value="SCIENCE">Science</option>
-                                    <option value="COMMERCE">Commerce / Business</option>
-                                    <option value="ARTS">Arts / Humanities</option>
-                                    <option value="ALL">All Groups</option>
-                                </select>
+                            <span style="font-size:.78rem;color:var(--muted)">
+                                Enable to set different fee structures per year &amp; group within one bill.
+                            </span>
+                        </div>
+
+                        <div id="collegeSingleMode">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Year / Class <span class="req">*</span></label>
+                                    <select class="form-select" id="collegeYear">
+                                        <option value="">— Select —</option>
+                                        <option value="Y1">1st Year (Class 11)</option>
+                                        <option value="Y2">2nd Year (Class 12)</option>
+                                        <option value="ALL">All Years</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Group / Stream <span class="req">*</span></label>
+                                    <select class="form-select" id="collegeGroup" onchange="onCollegeGroup(this.value)">
+                                        <option value="">— Select Group —</option>
+                                        <option value="SCIENCE">Science</option>
+                                        <option value="COMMERCE">Commerce / Business</option>
+                                        <option value="ARTS">Arts / Humanities</option>
+                                        <option value="ALL">All Groups</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Section <span class="opt">optional</span></label>
+                                    <input type="text" class="form-control" id="collegeSection" placeholder="e.g. A, B or All"/>
+                                </div>
+                                <div class="col-md-4 adv">
+                                    <label class="form-label">Shift <span class="opt">optional</span></label>
+                                    <select class="form-select" id="collegeShift">
+                                        <option value="">All</option>
+                                        <option>Morning</option><option>Day</option><option>Evening</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 adv">
+                                    <label class="form-label">Version <span class="opt">optional</span></label>
+                                    <select class="form-select" id="collegeVersion">
+                                        <option value="">All</option>
+                                        <option value="BM">Bangla Medium</option>
+                                        <option value="EV">English Version</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Section <span class="opt">optional</span></label>
-                                <input type="text" class="form-control" id="collegeSection" placeholder="e.g. A, B or All"/>
-                            </div>
-                            <div class="col-md-4 adv">
-                                <label class="form-label">Shift <span class="opt">optional</span></label>
-                                <select class="form-select" id="collegeShift">
-                                    <option value="">All</option>
-                                    <option>Morning</option><option>Day</option><option>Evening</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4 adv">
-                                <label class="form-label">Version <span class="opt">optional</span></label>
-                                <select class="form-select" id="collegeVersion">
-                                    <option value="">All</option>
-                                    <option value="BM">Bangla Medium</option>
-                                    <option value="EV">English Version</option>
-                                </select>
+                            <div id="sciNotice" class="alert alert-info d-flex align-items-center gap-2 mt-3 mb-0 py-2"
+                                 style="display:none !important; font-size:.8rem">
+                                <i class="bi bi-flask"></i>
+                                <span>Science group — <strong>Lab Fee</strong> will be added to the fee table.</span>
                             </div>
                         </div>
-                        <div id="sciNotice" class="alert alert-info d-flex align-items-center gap-2 mt-3 mb-0 py-2"
-                             style="display:none !important; font-size:.8rem">
-                            <i class="bi bi-flask"></i>
-                            <span>Science group — <strong>Lab Fee</strong> will be added to the fee table.</span>
+
+                        <div id="collegeMultiMode" style="display:none">
+                            <div class="form-text mb-2">Add each year / group combination. Fee structures are set per entry in Step 3.</div>
+                            <div id="collegeGroupList"></div>
+                            <button type="button" class="btn btn-sm btn-p mt-1" onclick="addCollegeGroupEntry()">
+                                <i class="bi bi-plus-lg me-1"></i>Add Year / Group
+                            </button>
+                            <div class="errmsg mt-2" id="e_collegegroups">Add at least one group entry.</div>
                         </div>
+
                     </div>
                 </div>
 
@@ -491,7 +517,18 @@
             </div>
         </div>
 
-        <!-- Multi-dept fee blocks -->
+        <!-- Multi-group fee blocks (college) -->
+        <div id="multiGroupFeeContainer" style="display:none">
+            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                <span style="font-size:.85rem;font-weight:600;color:var(--primary)">
+                    <i class="bi bi-diagram-3 me-1"></i>Fee Structure per Group
+                </span>
+                <span class="form-text">Each year / group can have its own fee rows, amounts, and category rules.</span>
+            </div>
+            <div id="multiGroupFeeBlocks"></div>
+        </div>
+
+        <!-- Multi-dept fee blocks (university) -->
         <div id="multiDeptFeeContainer" style="display:none">
             <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
                 <span style="font-size:.85rem;font-weight:600;color:var(--primary)">
@@ -502,7 +539,7 @@
             <div id="multiDeptFeeBlocks"></div>
         </div>
 
-        <!-- Semester blocks (university) -->
+        <!-- Semester blocks (university — single dept only) -->
         <div id="semCard" class="bcard" style="display:none">
             <div class="bcard-hdr" id="hdr_sem" onclick="toggleCard('body_sem','hdr_sem')">
                 <h6><i class="bi bi-layers"></i> Semester-wise Fee Setup</h6>

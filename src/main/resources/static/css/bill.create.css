@@ -809,3 +809,41 @@ body.adv-mode .adv {
         flex-wrap: wrap;
     }
 }
+
+.collegeMultiMode {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    background: #f8fafd;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: .5rem .75rem;
+}
+
+.collegeGroupList{
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+
+.dept-entry-block {
+    background: #f8fafd;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: .5rem .75rem;
+    margin-bottom: .5rem;
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+}
+
+.dept-entry-header {
+    font-size: .83rem;
+    font-weight: 500;
+    flex: 1;
+}
+
+.dept-entry-title{
+    font-size: .8rem;
+    color: var(--muted);
+}

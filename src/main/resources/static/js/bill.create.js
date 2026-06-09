@@ -8,9 +8,11 @@ const S = {
     section:    '',
     uniPM:      'ONE_TIME',
     multiDept:  false,
+    collegeMulti: false,
     months:     [],
     feeRows:    [],
     deptEntries: [],
+    groupEntries: [],
     semCnt:     0,
     draftId:    null,
 };
@@ -34,6 +36,19 @@ const FACULTY_LABELS = {
     SCI:'Faculty of Science', ARTS:'Faculty of Arts', COM:'Faculty of Commerce & Business',
     ENG:'Faculty of Engineering', LAW:'Faculty of Law', MED:'Faculty of Medicine',
     SOC:'Faculty of Social Science', ALL:'All Faculties'
+};
+const COLLEGE_GROUP_LABELS = {
+    Y1: '1st Year (Class 11)',
+    Y2: '2nd Year (Class 12)',
+    ALL: 'All Years'
+};
+
+const COLLEGE_GROUP_FEES = {
+    SCIENCE:  ['Tuition Fee','Session Fee','Exam Fee','Lab Fee','Development Fund'],
+    COMMERCE: ['Tuition Fee','Session Fee','Exam Fee','Development Fund'],
+    ARTS:     ['Tuition Fee','Session Fee','Exam Fee'],
+    OTHERS:   ['Tuition Fee','Session Fee','Exam Fee'],
+    ALL:      ['Tuition Fee','Session Fee','Exam Fee','Development Fund']
 };
 
 const FACULTY_DEPTS = {
@@ -109,6 +124,9 @@ function validate(step) {
         if (S.section === 'UNIVERSITY' && S.multiDept && S.deptEntries.length === 0) {
             showErr('e_multidept','Add at least one department entry.'); ok=false;
         } else { clearErr('e_multidept'); }
+        if (S.section === 'COLLEGE' && S.collegeMulti && S.groupEntries.length === 0) {
+            showErr('e_collegegroups','Add at least one group entry.'); ok=false;
+        } else { clearErr('e_collegegroups'); }
     }
     if (step === 3) {
         const needMonths = (S.section !== 'UNIVERSITY' || S.uniPM === 'MONTHLY');
@@ -141,11 +159,13 @@ function onSection(val) {
     S.section = val;
     S.feeRows = [];
     S.months  = [];
-    S.deptEntries = [];
+    S.deptEntries  = [];
+    S.groupEntries = [];
+    S.collegeMulti = false;
     renderSelMonths();
     $('#hier_school,#hier_college,#hier_uni').hide();
     if (val === 'SCHOOL')     $('#hier_school').show();
-    if (val === 'COLLEGE')    $('#hier_college').show();
+    if (val === 'COLLEGE')    { $('#hier_college').show(); }
     if (val === 'UNIVERSITY') { $('#hier_uni').show(); }
 }
 
@@ -158,6 +178,86 @@ function onFacultyChange(val) {
     const list = FACULTY_DEPTS[val] || FACULTY_DEPTS.default;
     const sel = $('#uniDept').empty().append('<option value="">— Select Department —</option>');
     list.forEach(d => sel.append(`<option value="${d.replace(/[\s&.]+/g,'_').toUpperCase()}">${d}</option>`));
+}
+
+function onCollegeMultiToggle(on) {
+    S.collegeMulti = on;
+    if (on) {
+        $('#collegeSingleMode').hide();
+        $('#collegeMultiMode').show();
+        if (S.groupEntries.length === 0) addCollegeGroupEntry();
+    } else {
+        $('#collegeSingleMode').show();
+        $('#collegeMultiMode').hide();
+    }
+}
+
+function addCollegeGroupEntry() {
+    const id = 'cge_' + Date.now();
+    const entry = { id, yearVal:'', groupVal:'', subGroupVal:'', label:'', feeRows:[], categoryRules:[] };
+    S.groupEntries.push(entry);
+
+    $('#collegeGroupList').append(`
+    <div class="dept-entry-block" id="${id}">
+        <div class="dept-entry-header">
+            <span class="dept-entry-title" id="${id}_lbl">Group Entry</span>
+            <button type="button" class="ibtn del" onclick="removeCollegeGroupEntry('${id}')"><i class="bi bi-trash3"></i></button>
+        </div>
+        <div class="row g-2">
+            <div class="col-md-3">
+                <label class="form-label" style="font-size:.78rem">Year / Class</label>
+                <select class="form-select form-select-sm" id="${id}_yr" onchange="onGroupEntryChange('${id}')">
+                    <option value="">— All Years —</option>
+                    <option value="Y1">1st Year (Class 11)</option>
+                    <option value="Y2">2nd Year (Class 12)</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" style="font-size:.78rem">Group <span class="req">*</span></label>
+                <select class="form-select form-select-sm" id="${id}_grp" onchange="onGroupEntryChange('${id}')">
+                    <option value="">— Select Group —</option>
+                    <option value="SCIENCE">Science</option>
+                    <option value="COMMERCE">Commerce / Business</option>
+                    <option value="ARTS">Arts / Humanities</option>
+                    <option value="OTHERS">Others</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" style="font-size:.78rem">Sub-group <span class="opt" style="text-transform:none">optional</span></label>
+                <input type="text" class="form-control form-control-sm" id="${id}_sub"
+                    placeholder="e.g. Biology, Computer"
+                    oninput="onGroupEntryChange('${id}')"/>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" style="font-size:.78rem">Section <span class="opt" style="text-transform:none">optional</span></label>
+                <input type="text" class="form-control form-control-sm" id="${id}_sec"
+                    placeholder="A, B or All"
+                    oninput="onGroupEntryChange('${id}')"/>
+            </div>
+        </div>
+    </div>`);
+    clearErr('e_collegegroups');
+}
+
+function removeCollegeGroupEntry(id) {
+    S.groupEntries = S.groupEntries.filter(e => e.id !== id);
+    $(`#${id}`).remove();
+    renderMultiGroupFeeBlocks();
+}
+
+function onGroupEntryChange(id) {
+    const entry = S.groupEntries.find(e => e.id === id);
+    if (!entry) return;
+    entry.yearVal     = $(`#${id}_yr`).val();
+    entry.groupVal    = $(`#${id}_grp`).val();
+    entry.subGroupVal = $(`#${id}_sub`).val().trim();
+    entry.sectionVal  = $(`#${id}_sec`).val().trim();
+    const yrLabel  = COLLEGE_GROUP_LABELS[entry.yearVal] || 'All Years';
+    const grpLabel = $(`#${id}_grp option:selected`).text() || '';
+    const sub      = entry.subGroupVal ? ` › ${entry.subGroupVal}` : '';
+    const sec      = entry.sectionVal  ? ` (${entry.sectionVal})` : '';
+    entry.label = `${yrLabel} — ${grpLabel}${sub}${sec}`;
+    $(`#${id}_lbl`).text(entry.label || 'Group Entry');
 }
 
 /* ─── MULTI-DEPT TOGGLE ─── */
@@ -278,13 +378,38 @@ function onDeptEntryChange(id) {
 function onEnterFee() {
     if (S.section === 'UNIVERSITY') {
         $('#uniPayCard').show();
+        $('#multiGroupFeeContainer').hide();
+        const semCard = $('#pm_SEMESTER').parent().closest('.pm-cards').find('#pm_SEMESTER');
+        if (S.multiDept) {
+            $('#pm_SEMESTER').addClass('pm-disabled');
+            if (S.uniPM === 'SEMESTER') { S.uniPM = 'ONE_TIME'; $('#pm_ONE_TIME').addClass('on'); $('#pm_SEMESTER').removeClass('on'); }
+        } else {
+            $('#pm_SEMESTER').removeClass('pm-disabled');
+        }
         applyUniPM(S.uniPM);
+    } else if (S.section === 'COLLEGE' && S.collegeMulti) {
+        $('#uniPayCard').hide();
+        $('#semCard').hide();
+        $('#stdFeeCard').hide();
+        $('#multiDeptFeeContainer').hide();
+        $('#monthCard').show();
+        $('#multiGroupFeeContainer').show();
+        if (S.groupEntries.length === 0) {
+            $('#multiGroupFeeBlocks').html('<div class="alert alert-warning py-2" style="font-size:.82rem"><i class="bi bi-exclamation-triangle me-1"></i>No group entries defined. Go back to Step 2.</div>');
+        } else {
+            S.groupEntries.forEach(ge => {
+                if (!ge.feeRows||ge.feeRows.length===0)
+                    ge.feeRows = (COLLEGE_GROUP_FEES[ge.groupVal]||COLLEGE_GROUP_FEES.ALL).map(n=>newRow(n));
+            });
+            renderMultiGroupFeeBlocks();
+        }
     } else {
         $('#uniPayCard').hide();
         $('#semCard').hide();
         $('#monthCard').show();
         $('#stdFeeCard').show();
         $('#multiDeptFeeContainer').hide();
+        $('#multiGroupFeeContainer').hide();
         if (S.feeRows.length === 0) seedRows();
         rebuildTable();
     }
@@ -375,38 +500,60 @@ function renderMultiDeptFeeBlocks() {
     S.deptEntries.forEach(de => {
         if (!de.feeRows || de.feeRows.length === 0) de.feeRows = DEF_FEES.UNIVERSITY.map(n => newRow(n));
         if (!de.categoryRules) de.categoryRules = [];
-
         const blockId = 'dfb_' + de.id;
-        container.append(`
-        <div class="bcard mb-3" id="${blockId}">
-            <div class="bcard-hdr light" id="hdr_${blockId}" onclick="toggleCard('body_${blockId}','hdr_${blockId}')">
-                <h6><i class="bi bi-building me-1"></i>${esc(de.label || 'Department')}</h6>
-                <i class="bi bi-chevron-down ti"></i>
-            </div>
-            <div class="bcard-body" id="body_${blockId}">
-                <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
-                    <div class="form-text"><i class="bi bi-lightbulb me-1 text-warning"></i>Type an amount, click <strong>Fill →</strong> to copy across all months.</div>
-                    <button type="button" class="btn btn-sm btn-p" onclick="addDeptRow('${de.id}')"><i class="bi bi-plus-lg me-1"></i>Add Fee Item</button>
-                </div>
-                <div class="ftbl-wrap">
-                    <table class="ftbl" id="ftbl_${de.id}">
-                        <thead><tr id="ftblHead_${de.id}"><th>Fee Item</th><th style="min-width:90px">Row Total</th><th style="width:36px"></th></tr></thead>
-                        <tbody id="ftblBody_${de.id}"></tbody>
-                        <tfoot><tr id="grandRow_${de.id}"><td>Grand Total (৳)</td></tr></tfoot>
-                    </table>
-                </div>
-                <div style="margin-top:1rem">
-                    <div class="sdiv">Student Category Pricing <span class="opt" style="text-transform:none">optional</span></div>
-                    <div class="form-text mb-2">Define additional charges or discounts for student categories in this department.</div>
-                    <div id="catRules_${de.id}"></div>
-                    <button type="button" class="btn btn-sm btn-outline-secondary mt-1" onclick="addCategoryRuleFor('${de.id}')"><i class="bi bi-plus-lg me-1"></i>Add Category Rule</button>
-                </div>
-            </div>
-        </div>`);
-
+        container.append(buildFeeBlockHtml(blockId, de.label || 'Department', de.id, 'dept'));
         rebuildDeptTable(de);
         de.categoryRules.forEach(rule => renderCategoryRuleRow(rule, `catRules_${de.id}`, de.id));
     });
+}
+
+function renderMultiGroupFeeBlocks() {
+    const container = $('#multiGroupFeeBlocks').empty();
+    if (S.groupEntries.length === 0) {
+        container.html('<div class="alert alert-warning py-2" style="font-size:.82rem"><i class="bi bi-exclamation-triangle me-1"></i>No group entries defined. Go back to Step 2.</div>');
+        return;
+    }
+    S.groupEntries.forEach(ge => {
+        if (!ge.feeRows || ge.feeRows.length === 0)
+            ge.feeRows = (COLLEGE_GROUP_FEES[ge.groupVal]||COLLEGE_GROUP_FEES.ALL).map(n => newRow(n));
+        if (!ge.categoryRules) ge.categoryRules = [];
+        const blockId = 'gfb_' + ge.id;
+        container.append(buildFeeBlockHtml(blockId, ge.label || 'Group', ge.id, 'group'));
+        rebuildDeptTable(ge);
+        ge.categoryRules.forEach(rule => renderCategoryRuleRow(rule, `catRules_${ge.id}`, ge.id));
+    });
+}
+
+function buildFeeBlockHtml(blockId, label, entryId, type) {
+    const addFn   = type === 'group' ? `addGroupRow('${entryId}')` : `addDeptRow('${entryId}')`;
+    const catFn   = `addCategoryRuleFor('${entryId}')`;
+    const icon    = type === 'group' ? 'bi-people' : 'bi-building';
+    return `
+    <div class="bcard mb-3" id="${blockId}">
+        <div class="bcard-hdr light" id="hdr_${blockId}" onclick="toggleCard('body_${blockId}','hdr_${blockId}')">
+            <h6><i class="bi ${icon} me-1"></i>${esc(label)}</h6>
+            <i class="bi bi-chevron-down ti"></i>
+        </div>
+        <div class="bcard-body" id="body_${blockId}">
+            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                <div class="form-text"><i class="bi bi-lightbulb me-1 text-warning"></i>Type an amount, click <strong>Fill →</strong> to copy across all months.</div>
+                <button type="button" class="btn btn-sm btn-p" onclick="${addFn}"><i class="bi bi-plus-lg me-1"></i>Add Fee Item</button>
+            </div>
+            <div class="ftbl-wrap">
+                <table class="ftbl" id="ftbl_${entryId}">
+                    <thead><tr id="ftblHead_${entryId}"><th>Fee Item</th><th style="min-width:90px">Row Total</th><th style="width:36px"></th></tr></thead>
+                    <tbody id="ftblBody_${entryId}"></tbody>
+                    <tfoot><tr id="grandRow_${entryId}"><td>Grand Total (৳)</td></tr></tfoot>
+                </table>
+            </div>
+            <div style="margin-top:1rem">
+                <div class="sdiv">Student Category Pricing <span class="opt" style="text-transform:none">optional</span></div>
+                <div class="form-text mb-2">Define extra charges or discounts for student categories in this group.</div>
+                <div id="catRules_${entryId}"></div>
+                <button type="button" class="btn btn-sm btn-outline-secondary mt-1" onclick="${catFn}"><i class="bi bi-plus-lg me-1"></i>Add Category Rule</button>
+            </div>
+        </div>
+    </div>`;
 }
 
 function rebuildDeptTable(de) {
@@ -520,19 +667,37 @@ function removeDeptRow(deptId, rid) {
     rebuildDeptGrand(de);
 }
 
+function addGroupRow(groupId) {
+    const ge = S.groupEntries.find(e => e.id === groupId);
+    if (!ge) return;
+    const row = newRow('New Fee');
+    ge.feeRows.push(row);
+    $(`#ftblBody_${groupId}`).append(deptRowHtml(row, groupId));
+    rebuildDeptGrand(ge);
+    $(`#tr_${row.id} .name-in`).focus().select();
+}
+
+function removeGroupRow(groupId, rid) {
+    const ge = S.groupEntries.find(e => e.id === groupId);
+    if (!ge) return;
+    ge.feeRows = ge.feeRows.filter(r => r.id !== rid);
+    $(`#tr_${rid}`).remove();
+    rebuildDeptGrand(ge);
+}
+
 /* ─── CATEGORY RULES (standard fee block) ─── */
 function addCategoryRule() {
     const rule = { id:'cr_'+Date.now(), label:'', type:'CHARGE', adjustType:'FIXED', adjustValue:0, applyTo:'ALL' };
     renderCategoryRuleRow(rule, 'categoryRuleList', null);
 }
 
-function addCategoryRuleFor(deptId) {
-    const de = S.deptEntries.find(e => e.id === deptId);
-    if (!de) return;
+function addCategoryRuleFor(entryId) {
+    const entry = S.deptEntries.find(e=>e.id===entryId) || S.groupEntries.find(e=>e.id===entryId);
+    if (!entry) return;
     const rule = { id:'cr_'+Date.now(), label:'', type:'CHARGE', adjustType:'FIXED', adjustValue:0, applyTo:'ALL' };
-    if (!de.categoryRules) de.categoryRules = [];
-    de.categoryRules.push(rule);
-    renderCategoryRuleRow(rule, `catRules_${deptId}`, deptId);
+    if (!entry.categoryRules) entry.categoryRules = [];
+    entry.categoryRules.push(rule);
+    renderCategoryRuleRow(rule, `catRules_${entryId}`, entryId);
 }
 
 function renderCategoryRuleRow(rule, containerId, deptId) {
@@ -589,9 +754,9 @@ function renderCategoryRuleRow(rule, containerId, deptId) {
     </div>`);
 }
 
-function removeCategoryRuleFor(deptId, ruleId) {
-    const de = S.deptEntries.find(e => e.id === deptId);
-    if (de && de.categoryRules) de.categoryRules = de.categoryRules.filter(r => r.id !== ruleId);
+function removeCategoryRuleFor(entryId, ruleId) {
+    const entry = S.deptEntries.find(e=>e.id===entryId) || S.groupEntries.find(e=>e.id===entryId);
+    if (entry && entry.categoryRules) entry.categoryRules = entry.categoryRules.filter(r => r.id !== ruleId);
     $(`#crrow_${ruleId}`).remove();
 }
 
@@ -628,8 +793,9 @@ $(document).on('click', '.mpill', function () {
         $(this).addClass('on');
     }
     sortMonths(); renderSelMonths(); clearErr('e_months');
-    if (S.multiDept) { S.deptEntries.forEach(de => rebuildDeptTable(de)); }
-    else             { rebuildTable(); }
+    if (S.multiDept)         { S.deptEntries.forEach(de => rebuildDeptTable(de)); }
+    else if (S.collegeMulti) { S.groupEntries.forEach(ge => rebuildDeptTable(ge)); }
+    else                     { rebuildTable(); }
 });
 
 function addCustomMonth() {
@@ -641,8 +807,9 @@ function addCustomMonth() {
     if (S.months.find(x => x.label === lbl)) { toast(disp + ' already added.','err'); return; }
     S.months.push({ label:lbl, display:disp, year:yr, seq: S.months.length+1 });
     sortMonths(); renderSelMonths(); clearErr('e_months');
-    if (S.multiDept) { S.deptEntries.forEach(de => rebuildDeptTable(de)); }
-    else             { rebuildTable(); }
+    if (S.multiDept)         { S.deptEntries.forEach(de => rebuildDeptTable(de)); }
+    else if (S.collegeMulti) { S.groupEntries.forEach(ge => rebuildDeptTable(ge)); }
+    else                     { rebuildTable(); }
 }
 
 function removeMonth(lbl) {
@@ -651,8 +818,9 @@ function removeMonth(lbl) {
     const base = lbl.split('_')[0];
     const yr   = parseInt(lbl.split('_')[1]);
     if (yr === parseInt($('#pillYear').val())) $(`.mpill[data-m="${base}"]`).removeClass('on');
-    if (S.multiDept) { S.deptEntries.forEach(de => rebuildDeptTable(de)); }
-    else             { rebuildTable(); }
+    if (S.multiDept)         { S.deptEntries.forEach(de => rebuildDeptTable(de)); }
+    else if (S.collegeMulti) { S.groupEntries.forEach(ge => rebuildDeptTable(ge)); }
+    else                     { rebuildTable(); }
 }
 
 function sortMonths() {
@@ -697,15 +865,17 @@ function selAllMonths() {
         }
     });
     sortMonths(); renderSelMonths(); clearErr('e_months');
-    if (S.multiDept) { S.deptEntries.forEach(de => rebuildDeptTable(de)); }
-    else             { rebuildTable(); }
+    if (S.multiDept)         { S.deptEntries.forEach(de => rebuildDeptTable(de)); }
+    else if (S.collegeMulti) { S.groupEntries.forEach(ge => rebuildDeptTable(ge)); }
+    else                     { rebuildTable(); }
 }
 
 function clrMonths() {
     S.months = [];
     renderSelMonths();
-    if (S.multiDept) { S.deptEntries.forEach(de => rebuildDeptTable(de)); }
-    else             { rebuildTable(); }
+    if (S.multiDept)         { S.deptEntries.forEach(de => rebuildDeptTable(de)); }
+    else if (S.collegeMulti) { S.groupEntries.forEach(ge => rebuildDeptTable(ge)); }
+    else                     { rebuildTable(); }
 }
 
 /* ─── STANDARD FEE TABLE ─── */
@@ -885,7 +1055,9 @@ function buildAcctRows() {
     $('#acctSummary').hide();
 
     const allRows = S.multiDept
-        ? S.deptEntries.flatMap(de => (de.feeRows||[]).map(r => ({ ...r, _deptLabel: de.label })))
+        ? S.deptEntries.flatMap(de => (de.feeRows||[]).map(r => ({ ...r, _entryLabel: de.label })))
+        : S.collegeMulti
+        ? S.groupEntries.flatMap(ge => (ge.feeRows||[]).map(r => ({ ...r, _entryLabel: ge.label })))
         : S.feeRows;
 
     if (allRows.length === 0) {
@@ -903,7 +1075,7 @@ function buildAcctRows() {
             const sel = row.accountId == a.id ? ' selected' : '';
             opts += `<option value="${a.id}"${sel}>${esc(a.bankName)} — ${a.accountNo}</option>`;
         });
-        const nameLabel = S.multiDept ? `${esc(row._deptLabel)} › ${esc(row.name)}` : esc(row.name);
+        const nameLabel = (S.multiDept||S.collegeMulti) ? `${esc(row._entryLabel||'')} › ${esc(row.name)}` : esc(row.name);
         cont.append(`
         <div class="acct-row">
             <span class="acct-name"><i class="bi bi-dot"></i>${nameLabel}</span>
@@ -922,9 +1094,14 @@ function calcDeptRowTotalById(row) {
 
 function onAcctMap(el, rid) {
     let found = S.feeRows.find(r => r.id===rid);
-    if (!found) { S.deptEntries.forEach(de => { const r=de.feeRows&&de.feeRows.find(r=>r.id===rid); if(r) found=r; }); }
+    if (!found) S.deptEntries.forEach(de => { const r=de.feeRows&&de.feeRows.find(r=>r.id===rid); if(r) found=r; });
+    if (!found) S.groupEntries.forEach(ge => { const r=ge.feeRows&&ge.feeRows.find(r=>r.id===rid); if(r) found=r; });
     if (found) found.accountId = el.value ? parseInt(el.value) : null;
-    const allRows = S.multiDept ? S.deptEntries.flatMap(de => (de.feeRows||[])) : S.feeRows;
+    const allRows = S.multiDept
+        ? S.deptEntries.flatMap(de=>(de.feeRows||[]))
+        : S.collegeMulti
+        ? S.groupEntries.flatMap(ge=>(ge.feeRows||[]))
+        : S.feeRows;
     refreshAcctSummary(allRows);
 }
 
@@ -972,7 +1149,11 @@ function onLpfScope(val) {
 
 function buildPerFeeLpf() {
     const c=$('#perFeeList').empty();
-    const rows = S.multiDept ? S.deptEntries.flatMap(de=>(de.feeRows||[])) : S.feeRows;
+    const rows = S.multiDept
+        ? S.deptEntries.flatMap(de=>(de.feeRows||[]))
+        : S.collegeMulti
+        ? S.groupEntries.flatMap(ge=>(ge.feeRows||[]))
+        : S.feeRows;
     rows.forEach(row => {
         c.append(`<div class="form-check">
             <input class="form-check-input" type="checkbox" checked id="lf_${row.id}" value="${row.id}"/>
@@ -999,9 +1180,14 @@ function buildPreview() {
         const sc=gv('#schoolSection'); if(sc) p.push(kv('Section',sc));
     }
     if(S.section==='COLLEGE'){
-        p.push(kv('Year',  selTxt('#collegeYear')||'—'));
-        p.push(kv('Group', selTxt('#collegeGroup')||'—'));
-        const cs=gv('#collegeSection'); if(cs) p.push(kv('Section',cs));
+        if(S.collegeMulti){
+            p.push(kv('Mode','Multi-group'));
+            p.push(kv('Groups', S.groupEntries.map(e=>esc(e.label||'—')).join(', ')||'—'));
+        } else {
+            p.push(kv('Year',  selTxt('#collegeYear')||'—'));
+            p.push(kv('Group', selTxt('#collegeGroup')||'—'));
+            const cs=gv('#collegeSection'); if(cs) p.push(kv('Section',cs));
+        }
     }
     if(S.section==='UNIVERSITY'){
         if (S.multiDept) {
@@ -1018,25 +1204,19 @@ function buildPreview() {
     }
 
     p.push(pvTitle('bi-table','Fee Structure'));
-    if(S.multiDept && S.deptEntries.length){
+    if(S.collegeMulti && S.groupEntries.length){
+        S.groupEntries.forEach(ge => {
+            p.push(`<div style="font-weight:600;font-size:.83rem;margin:.5rem 0 .3rem;color:var(--primary-lt)"><i class="bi bi-people me-1"></i>${esc(ge.label||'Group')}</div>`);
+            if(ge.feeRows&&ge.feeRows.length&&S.months.length){
+                p.push(buildFeePreviewTable(ge.feeRows));
+                if(ge.categoryRules&&ge.categoryRules.length){ pvAppendCatRules(p, ge.categoryRules); }
+            } else { p.push(pvWarn('No fee items configured for this group.')); }
+        });
+    } else if(S.multiDept && S.deptEntries.length){
         S.deptEntries.forEach(de => {
             p.push(`<div style="font-weight:600;font-size:.83rem;margin:.5rem 0 .3rem;color:var(--primary-lt)"><i class="bi bi-building me-1"></i>${esc(de.label||'Department')}</div>`);
             if(de.feeRows&&de.feeRows.length&&S.months.length){
-                let tbl=`<div class="ftbl-wrap"><table class="pv-tbl"><thead><tr><th>Fee Item</th>`;
-                S.months.forEach(m => tbl+=`<th>${esc(m.display)}</th>`);
-                tbl+=`<th>Total</th></tr></thead><tbody>`;
-                let grand=0; const cs={};
-                S.months.forEach(m => cs[m.label]=0);
-                de.feeRows.forEach(row => {
-                    tbl+=`<tr><td>${esc(row.name)}</td>`;
-                    S.months.forEach(m => { const a=parseFloat(row.amounts[m.label])||0; cs[m.label]+=a; tbl+=`<td>৳${fmt(a)}</td>`; });
-                    const rt=calcDeptRowTotalById(row); grand+=rt;
-                    tbl+=`<td>৳${fmt(rt)}</td></tr>`;
-                });
-                tbl+=`</tbody><tfoot><tr><td>Subtotal</td>`;
-                S.months.forEach(m => tbl+=`<td>৳${fmt(cs[m.label])}</td>`);
-                tbl+=`<td>৳${fmt(grand)}</td></tr></tfoot></table></div>`;
-                p.push(tbl);
+                p.push(buildFeePreviewTable(de.feeRows));
                 if(de.categoryRules&&de.categoryRules.length){ pvAppendCatRules(p, de.categoryRules); }
             } else { p.push(pvWarn('No fee items configured for this department.')); }
         });
@@ -1126,6 +1306,24 @@ function collectCategoryRules(containerId) {
         });
     });
     return rules;
+}
+
+function buildFeePreviewTable(rows) {
+    let tbl=`<div class="ftbl-wrap"><table class="pv-tbl"><thead><tr><th>Fee Item</th>`;
+    S.months.forEach(m => tbl+=`<th>${esc(m.display)}</th>`);
+    tbl+=`<th>Total</th></tr></thead><tbody>`;
+    let grand=0; const cs={};
+    S.months.forEach(m => cs[m.label]=0);
+    rows.forEach(row => {
+        tbl+=`<tr><td>${esc(row.name)}</td>`;
+        S.months.forEach(m => { const a=parseFloat(row.amounts[m.label])||0; cs[m.label]+=a; tbl+=`<td>৳${fmt(a)}</td>`; });
+        const rt=S.months.reduce((s,m)=>s+(parseFloat(row.amounts[m.label])||0),0); grand+=rt;
+        tbl+=`<td>৳${fmt(rt)}</td></tr>`;
+    });
+    tbl+=`</tbody><tfoot><tr><td>Subtotal</td>`;
+    S.months.forEach(m => tbl+=`<td>৳${fmt(cs[m.label])}</td>`);
+    tbl+=`<td>৳${fmt(grand)}</td></tr></tfoot></table></div>`;
+    return tbl;
 }
 
 function pvTitle(ico,lbl){ return `<div class="pv-title"><i class="bi ${ico} me-1"></i>${lbl}</div>`; }
